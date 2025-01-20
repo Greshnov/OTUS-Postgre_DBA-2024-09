@@ -3,8 +3,8 @@
 
 ### Homework
 
-1. [SQL и реляционные СУБД. Введение в PostgreSQL]() 
-2. [Установка PostgreSQL]()
+1. [SQL и реляционные СУБД. Введение в PostgreSQL](/Homework/HW-1.md) 
+2. [Установка PostgreSQL](/Homework/HW-2.md)
 3. [Физический уровень PostgreSQL ]()
 4. [Логический уровень PostgreSQL ]()
 5. [Настройка PostgreSQL ]()
