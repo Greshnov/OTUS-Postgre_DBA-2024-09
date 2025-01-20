@@ -51,8 +51,19 @@ ip -c a
 ![image](https://github.com/user-attachments/assets/9c777f9a-2ce6-4c86-af03-dc13c08450f9)\
 ![image](https://github.com/user-attachments/assets/ee554d0c-7f3b-4f27-b3bc-bf943ea4e482)
 
-
-
 #### Часть 4. Удаление Docker с сервером и повторное создание.
-1. ...
+1. Удаление контейнера с сервером
+```
+sudo docker stop pg-docker
+sudo docker rm  pg-docker
+```
+![image](https://github.com/user-attachments/assets/410ae12a-57a9-40d2-804b-df5b7a0938ff)\
+В процессе выполнения (остановка контейнера) была ошибка отказа в доступе. Выполнено выделение прав пользователю и перезагрузка ВМ.
+```
+sudo usermod -a -G docker alex
+sudo reboot
+```
+![image](https://github.com/user-attachments/assets/1943d7d0-45ac-451c-8de0-7eca5f4f5a8c)
+2. рр
+
 
