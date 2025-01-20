@@ -42,7 +42,16 @@ select * from book;
 ```
 ![image](https://github.com/user-attachments/assets/93b21670-b052-4419-8f1e-bba035714d95)
 #### Часть 3. Подключение к Docker с сервером извне.
-1. ...
+1. Подключение через программу DBeaver с другого ПК находящегося в той же локальной сети.
+```
+# Получениие внешнего адреса виртуальной машины
+ip -c a
+```
+![image](https://github.com/user-attachments/assets/49d08d1a-0c0e-4c3f-b474-074206a5c48e)\
+![image](https://github.com/user-attachments/assets/9c777f9a-2ce6-4c86-af03-dc13c08450f9)\
+![image](https://github.com/user-attachments/assets/ee554d0c-7f3b-4f27-b3bc-bf943ea4e482)
+
+
 
 #### Часть 4. Удаление Docker с сервером и повторное создание.
 1. ...
