@@ -10,15 +10,37 @@
 ![image](https://github.com/user-attachments/assets/aab8972e-ca95-417c-987b-714c44913587)\
 Для проверки правильности установки - выполнена команда из документации. Результат - Docker установлен.\
 ![image](https://github.com/user-attachments/assets/d19696db-dc9a-4946-93b7-f39aec61631b)
+2. Создан каталог /var/lib/postgres (из-под пользователя root)\
+   ![image](https://github.com/user-attachments/assets/2a58e3b3-457e-4e79-9113-cb5f6cd608b7)
+3. Загружен образ PostgeSQL (https://hub.docker.com/_/postgres)\
+   ![image](https://github.com/user-attachments/assets/444e153a-77df-4895-aab1-6d3076c582fb)
+4. Создана Docker-сеть. 
+```
+sudo docker network create pg-net
+```
+   ![image](https://github.com/user-attachments/assets/9780c546-f6ce-467e-bc4e-c00ba3d9a427)
 
-
-
-
+5. Запущен контейнер с образом PostgeSQL. Добавлено перенаправление порта 5432 на 5433, так как на ВМ уже установлен PostgreSQL.
+```
+sudo docker run --name pg-docker --network pg-net -e POSTGRES_PASSWORD=postgres -d -p 5433:5432 -v /var/lib/postgres:/var/lib/postgres postgres:latest
+```
+![image](https://github.com/user-attachments/assets/ba47a840-0ece-4cc5-9edd-63aeb5764492)
 
 #### Часть 2. Установка Docker с клиентом PostgreSQL.
-1. ...
+1. Запущен контейнер с клиентом PostgeSQL.
+```
+sudo docker run -it --rm --network pg-net --name pg-client postgres:latest psql -h pg-docker -U postgres
+```
+![image](https://github.com/user-attachments/assets/b5a9a6dc-b178-42f6-b88e-76ee0c938a1c)
 
-
+2. Подключение из контейнера с клиентом к контейнеру с сервером. Создание таблицы.
+```
+create table book(title text, author text, year int);
+insert into book(title, author, year) values('First book', 'First Author', 2024);
+insert into book(title, author, year) values('Second book', 'First Author', 2025);
+select * from book;
+```
+![image](https://github.com/user-attachments/assets/93b21670-b052-4419-8f1e-bba035714d95)
 #### Часть 3. Подключение к Docker с сервером извне.
 1. ...
 
