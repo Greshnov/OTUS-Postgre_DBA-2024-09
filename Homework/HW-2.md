@@ -20,11 +20,11 @@ sudo docker network create pg-net
 ```
    ![image](https://github.com/user-attachments/assets/9780c546-f6ce-467e-bc4e-c00ba3d9a427)
 
-5. Запущен контейнер с образом PostgeSQL. Добавлено перенаправление порта 5432 на 5433, так как на ВМ уже установлен PostgreSQL.
+5. Запущен контейнер с образом PostgeSQL. Добавлено перенаправление порта 5432 на 5433, так как на ВМ уже установлен PostgreSQL. Примонтирован ранее созданный каталог /var/lib/postgres для данных /var/lib/postgresql/data.
 ```
-sudo docker run --name pg-docker --network pg-net -e POSTGRES_PASSWORD=postgres -d -p 5433:5432 -v /var/lib/postgres:/var/lib/postgres postgres:latest
+sudo docker run --name pg-docker --network pg-net -e POSTGRES_PASSWORD=postgres -d -p 5433:5432 -v /var/lib/postgres:/var/lib/postgresql/data postgres:latest
 ```
-![image](https://github.com/user-attachments/assets/ba47a840-0ece-4cc5-9edd-63aeb5764492)
+![image](https://github.com/user-attachments/assets/64302698-41a2-4606-a4c0-ae29ce4096a7)
 
 #### Часть 2. Установка Docker с клиентом PostgreSQL.
 1. Запущен контейнер с клиентом PostgeSQL.
@@ -64,27 +64,10 @@ sudo usermod -a -G docker alex
 sudo reboot
 ```
 ![image](https://github.com/user-attachments/assets/1943d7d0-45ac-451c-8de0-7eca5f4f5a8c)
-2. Создани контейнер с сервером заново.\
+2. Создан контейнер с сервером заново.\
 ![image](https://github.com/user-attachments/assets/2e4a11f1-0e73-4a08-b9ac-a0df85fa725a)
-3. Подключены из контейнера с клиентом. Созданная ранее таблица не обнаружена.\
-![image](https://github.com/user-attachments/assets/806b8378-8852-41bc-b036-63031106b596)
-4. Вошли в контейнер с сервером. Установили текстовые редакторы vim и nano. Открыли консоль psql от пользователя postgres. Вывели информация о расположение системных файлов. Видим, что они расположены не в той папке, которую монтировали в первый раз (/var/lib/postgres).
-```
-sudo docker exec -it pg-docker bash
-# Установить vim и nano
-apt-get update
-apt-get install vim nano -y
-# Открыть консоль psql от имени postgres
-psql -U postgres
-# Вывод расположения системных файлов PostgreSQL
-show hba_file;
-show config_file;
-show data_directory;
-```
-![image](https://github.com/user-attachments/assets/c84fe189-5c8a-4ff8-8baf-54b9d8c3e0d0)\
-![image](https://github.com/user-attachments/assets/a46c1874-4ba9-4492-af04-8f813a41e35f)\
-![image](https://github.com/user-attachments/assets/59e196ad-f017-479e-a587-4975607c5994)
-5. 
+3. Подключены из контейнера с клиентом. Созданная ранее таблица и данные в ней обнаружены. Даннные на месте, так как примонтирован тот же каталог что и впервом случае. После удаление контейнера данные остались в примонтированном каталоге.\
+![image](https://github.com/user-attachments/assets/14e5a1e5-b87d-410a-8936-08dba872f58f)
 
 
 
