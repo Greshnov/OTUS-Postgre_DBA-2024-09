@@ -33,7 +33,7 @@ sudo docker run -it --rm --network pg-net --name pg-client postgres:latest psql 
 ```
 ![image](https://github.com/user-attachments/assets/b5a9a6dc-b178-42f6-b88e-76ee0c938a1c)
 
-2. Подключение из контейнера с клиентом к контейнеру с сервером. Создание таблицы.
+2. Подключены из контейнера с клиентом к контейнеру с сервером. Создана таблица book.
 ```
 create table book(title text, author text, year int);
 insert into book(title, author, year) values('First book', 'First Author', 2024);
@@ -42,7 +42,7 @@ select * from book;
 ```
 ![image](https://github.com/user-attachments/assets/93b21670-b052-4419-8f1e-bba035714d95)
 #### Часть 3. Подключение к Docker с сервером извне.
-1. Подключение через программу DBeaver с другого ПК находящегося в той же локальной сети.
+1. Подключены через программу DBeaver с другого ПК, находящегося в той же локальной сети.
 ```
 # Получениие внешнего адреса виртуальной машины
 ip -c a
@@ -52,7 +52,7 @@ ip -c a
 ![image](https://github.com/user-attachments/assets/ee554d0c-7f3b-4f27-b3bc-bf943ea4e482)
 
 #### Часть 4. Удаление Docker с сервером и повторное создание.
-1. Удаление контейнера с сервером
+1. Удален контейнер с сервером
 ```
 sudo docker stop pg-docker
 sudo docker rm  pg-docker
@@ -64,6 +64,32 @@ sudo usermod -a -G docker alex
 sudo reboot
 ```
 ![image](https://github.com/user-attachments/assets/1943d7d0-45ac-451c-8de0-7eca5f4f5a8c)
-2. рр
+2. Создани контейнер с сервером заново.\
+![image](https://github.com/user-attachments/assets/2e4a11f1-0e73-4a08-b9ac-a0df85fa725a)
+3. Подключены из контейнера с клиентом. Созданная ранее таблица не обнаружена.\
+![image](https://github.com/user-attachments/assets/806b8378-8852-41bc-b036-63031106b596)
+4. Вошли в контейнер с сервером. Установили текстовые редакторы vim и nano. Открыли консоль psql от пользователя postgres. Вывели информация о расположение системных файлов. Видим, что они расположены не в той папке, которую монтировали в первый раз (/var/lib/postgres).
+```
+sudo docker exec -it pg-docker bash
+# Установить vim и nano
+apt-get update
+apt-get install vim nano -y
+# Открыть консоль psql от имени postgres
+psql -U postgres
+# Вывод расположения системных файлов PostgreSQL
+show hba_file;
+show config_file;
+show data_directory;
+```
+![image](https://github.com/user-attachments/assets/c84fe189-5c8a-4ff8-8baf-54b9d8c3e0d0)\
+![image](https://github.com/user-attachments/assets/a46c1874-4ba9-4492-af04-8f813a41e35f)\
+![image](https://github.com/user-attachments/assets/59e196ad-f017-479e-a587-4975607c5994)
+5. 
+
+
+
+
+
+
 
 
