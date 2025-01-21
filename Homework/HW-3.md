@@ -4,7 +4,7 @@
 ### Homework 2. Физический уровень PostgreSQL
 
 #### Часть 1. Установка PostgreSQL.
-1. В VirtualBox установлена ОС Debian. Установлен PostgreSQL. (см. )
+1. В VirtualBox установлена ОС Debian. Установлен PostgreSQL. (см. [Homework 1](/Homework/HW-1.md))
 
 #### Часть 2. Создание таблицы и остановка PostgreSQL.
 1. Из-под пользователя postgres в psql создана произвольная таблица с произвольным содержимым.
