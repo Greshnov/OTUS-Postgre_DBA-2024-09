@@ -18,7 +18,11 @@ create table test(name text);
 insert into test values('Name 1');
 insert into test values('Name 2');
 ```
-2. PostgreSQL остановлен.
+![image](https://github.com/user-attachments/assets/6292277a-f536-45f2-94a5-c596a4702f7c)
+
+2. PostgreSQL остановлен.\
+![image](https://github.com/user-attachments/assets/bb52d2bd-a49a-4da4-9a1e-0b4fc27ccd17)
+
 
 #### Часть 3. Создание и подключение нового диска ВМ.
 1. Создан новый диск к ВМ размером 10GB
