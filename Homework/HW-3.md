@@ -5,6 +5,11 @@
 
 #### Часть 1. Установка PostgreSQL.
 1. В VirtualBox установлена ОС Debian. Установлен PostgreSQL. (см. [Homework 1](/Homework/HW-1.md))
+2. Кластер запущен
+```
+sudo -u postgres pg_lsclusters
+```
+![image](https://github.com/user-attachments/assets/78695a8d-1a65-40e3-b74a-05ed1c9ddd45)
 
 #### Часть 2. Создание таблицы и остановка PostgreSQL.
 1. Из-под пользователя postgres в psql создана произвольная таблица с произвольным содержимым.
