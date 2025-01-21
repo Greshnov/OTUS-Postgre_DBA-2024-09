@@ -93,7 +93,7 @@ sudo rm /mnt/data/test_file
 ![image](https://github.com/user-attachments/assets/2cc59a33-a169-4a13-b394-876ad56976fd)
 
 
-6. Инстанс перезагружен, диск остается примонтированным. (если не так смотрим в сторону fstab)
+6. Инстанс ВМ перезагружен, диск остается примонтированным.
    ```
    sudo reboot
    df -h -x tmpfs
@@ -103,32 +103,55 @@ sudo rm /mnt/data/test_file
 #### Часть 4. Перенос содержимого PostgreSQL.
 1. Пользователь postgres сделан владельцем /mnt/data 
 ```
-- chown -R postgres:postgres /mnt/data/
+sudo chown -R postgres:postgres /mnt/data/
 ```
+![image](https://github.com/user-attachments/assets/0dcc65d5-6dab-4a4c-bf60-36eb75fb3e12)
+
 
 2. Содержимое /var/lib/postgres/15 перенесено в /mnt/data
 ``` 
-mv /var/lib/postgresql/15 /mnt/data
+sudo mv /var/lib/postgresql/15 /mnt/data
 ```
+![image](https://github.com/user-attachments/assets/28f08ee5-784c-4c62-8252-b7d5cf914162)
 
-3. Попытка запуска кластера. напишите получилось или нет и почему
+3. Попытка запуска кластера. Запуск не удался, так как настройки PostgeSQL остались без изменений и ссылаются на прежний каталог, которого уже нет.
 ```
 sudo -u postgres pg_ctlcluster 15 main start
 ```
+![image](https://github.com/user-attachments/assets/21a8ad61-3929-4fe9-9efc-fdc891ec31ee)
+
 
 #### Часть 5. Настройка конфигурации PostgreSQL.
-1. В файлах, раположенных в /etc/postgresql/15/main, изменен конфигурационный параметр, который .... напишите что и почему поменяли
+1. В файле postgresql.conf, раположенном в /etc/postgresql/15/main, изменено значение ***data_directory*** в секции FILE LOCATIONS - задан адрес нового примонтированного каталога, куда ранее был перенесен каталог с данными PostgreSQL.
 ```
-change
+sudo nano /etc/postgresql/15/main/postgresql.conf
+
+data_directory = '/var/lib/postgresql/15/main'
+>
+data_directory = '/mnt/data/15/main'
+
 ```
-2. Кластер запущен. напишите получилось или нет и почему
+![image](https://github.com/user-attachments/assets/735d8ccb-5160-43cd-aabc-0e9c8b37cd9e)\
+![image](https://github.com/user-attachments/assets/03e032b3-3dcc-422c-8929-e60053278b7d)
+
+
+2. Кластер запущен. Видим, что примонтирован нужный каталог с данными на новом примонтированном диске.
 ```
 sudo -u postgres pg_ctlcluster 15 main start
+sudo -u postgres pg_lsclusters
 ```
+![image](https://github.com/user-attachments/assets/3462c28d-1ea1-4e33-a351-971bad5bf74b)
+![image](https://github.com/user-attachments/assets/db243e97-4575-4c8d-ae58-250cac25d8bb)
+
+
 3. Содержимое ранее созданной таблицы на месте.
 ```
-select * from 
+sudo su postgres
+psql
+select * from test;
 ```
+![image](https://github.com/user-attachments/assets/c71e1699-d053-46e7-b346-bf45e8e6f4c6)
+
 
 
 
