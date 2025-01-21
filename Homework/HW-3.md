@@ -9,7 +9,7 @@
 ```
 sudo -u postgres pg_lsclusters
 ```
-![image](https://github.com/user-attachments/assets/78695a8d-1a65-40e3-b74a-05ed1c9ddd45)
+![image](https://github.com/user-attachments/assets/963acaa4-8ebf-496e-a4b3-a9ae1dbc8c0f)
 
 #### Часть 2. Создание таблицы и остановка PostgreSQL.
 1. Из-под пользователя postgres в psql создана произвольная таблица с произвольным содержимым.
@@ -35,7 +35,8 @@ insert into test values('Name 2');
 ![image](https://github.com/user-attachments/assets/7ffb4c5a-b368-4fc9-9340-383d8b4c0fb6)
 ![image](https://github.com/user-attachments/assets/81494515-8f24-469f-bf54-101007a8c7b6)
 
-5. Новый диск проинициализирован, файловая система подмонтирована. (По инструкции https://www.digitalocean.com/community/tutorials/how-to-partition-and-format-storage-devices-in-linux)
+5. Новый диск проинициализирован, файловая система подмонтирована.\
+   (По инструкции https://www.digitalocean.com/community/tutorials/how-to-partition-and-format-storage-devices-in-linux)
 ```
 # Просмотр устройств
 lsblk
@@ -93,6 +94,11 @@ sudo rm /mnt/data/test_file
 
 
 6. Инстанс перезагружен, диск остается примонтированным. (если не так смотрим в сторону fstab)
+   ```
+   sudo reboot
+   df -h -x tmpfs
+   ```
+![image](https://github.com/user-attachments/assets/a9b8a4ce-727a-4abb-9179-3485bf49badf)
 
 #### Часть 4. Перенос содержимого PostgreSQL.
 1. Пользователь postgres сделан владельцем /mnt/data 
