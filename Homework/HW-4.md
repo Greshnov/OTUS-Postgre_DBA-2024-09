@@ -153,20 +153,52 @@ INSERT INTO testnm.t1 values(1);
 
 
 #### Часть 7. Проверка таблицы
-1. Сделана выборка из таблицы t1 из-под пользователя testread.
+1. Сделана попытка выборки из таблицы t1 из-под пользователя testread.\
+   Результат - отказ в доступе, потому что выделение прав запросом ***grant SELECT on all TABLES in SCHEMA testnm TO readonly*** дало доступ только для существующих на тот момент времени таблиц, а таблица t1 пересоздавалась и оказалась уже незнакомой.
+2. Настроено выделение доступов по умолчанию (ALTER default privileges ...). Повторный запрос от пользователя testread завершился той же ошибкой доступа.\
+   Причина в том, что таблица была создана до установки прав доступа по-умолчанию.
+3. Выполнен повторный запрос выделения прав. Теперь выборка от пользователя testread завершилась успешно. Создаваемые впредь таблицы в этой схеме будут доступны пользователю по-умолчанию.
 ```
-зайдите под пользователем testread в базу данных testdb
-сделайте select * from testnm.t1;
-получилось?
-есть идеи почему? если нет - смотрите шпаргалку
-как сделать так чтобы такое больше не повторялось? если нет идей - смотрите шпаргалку
-сделайте select * from testnm.t1;
-получилось?
-есть идеи почему? если нет - смотрите шпаргалку
-сделайте select * from testnm.t1;
-получилось?
-ура!
+# Вход в кластер
+sudo su - postgres
+psql -p 5434
+
+# Вход под пользователем testread
+\c testdb testread
+
+# Выборка
+select * from testnm.t1;
+
+# Переключение пользователя на postgres
+\c testdb postgres;
+
+# Установка доступов по умолчанию
+ALTER default privileges in SCHEMA testnm grant SELECT on TABLES to readonly;
+
+# Вход под пользователем testread
+\c testdb testread
+
+# Выборка
+select * from testnm.t1;
+
+# Переключение пользователя на postgres
+\c testdb postgres;
+
+# Повторное назначение прав
+# Право на select для всех таблиц схемы testnm
+grant SELECT on ALL TABLES in SCHEMA testnm TO readonly; 
+
+# Вход под пользователем testread
+\c testdb testread
+
+# Выборка
+select * from testnm.t1;
 ```
+
+![image](https://github.com/user-attachments/assets/dacec1ba-1ab2-451f-a0c8-3867f1306069)
+![image](https://github.com/user-attachments/assets/ecd37d03-6fcf-45e2-85dd-82b0f411772b)
+
+
 
 #### Часть 8. Создание второй таблицы
 1. Выполнена команда создания таблицы t2.
