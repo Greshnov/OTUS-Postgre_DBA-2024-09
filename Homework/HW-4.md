@@ -201,20 +201,33 @@ select * from testnm.t1;
 
 
 #### Часть 8. Создание второй таблицы
-1. Выполнена команда создания таблицы t2.
+1. Выполнена команда создания таблицы t2 пользователем testread с ролью readonly. Таблица создалась и наполниась данными. Это связано с тем, что роль public добавляется новому пользователю автоматически, таким образом он может по умолчанию создавать объекты в схеме public в подключившейся базе.
 ```
-теперь попробуйте выполнить команду create table t2(c1 integer); insert into t2 values (2);
+create table t2(c1 integer);
+insert into t2 values (2);
+
 а как так? нам же никто прав на создание таблиц и insert в них под ролью readonly?
 есть идеи как убрать эти права? если нет - смотрите шпаргалку
 если вы справились сами то расскажите что сделали и почему, если смотрели шпаргалку - объясните что сделали и почему выполнив указанные в ней команды
 теперь попробуйте выполнить команду create table t3(c1 integer); insert into t2 values (2);
 расскажите что получилось и почему
 ```
-2. Убраны права на создание и изменение таблиц.
+![image](https://github.com/user-attachments/assets/5304885b-deae-4195-ba70-90fd9352a5d7)
+
+2. У роли public отозваны права на создание в схеме public и все права на базу testdb.
 ```
-...
+\c testdb postgres; 
+REVOKE CREATE on SCHEMA public FROM public; 
+REVOKE ALL on DATABASE testdb FROM public; 
 ```
-3. Выполнена команда создания таблицы t3.
+![image](https://github.com/user-attachments/assets/90141fd6-ee9c-4c4f-9fe9-d4f17d0d762c)
+
+3. Выполнена команда создания таблицы t3 пользователем testread. Получена ошибка отказа в доступе. Отказ в доступе в схеме public. Это соответстует логиге, заданной выше (отозваны права)
 ```
-...
+\c testdb testread;
+create table t3(c1 integer);
+insert into t2 values (2);
 ```
+![image](https://github.com/user-attachments/assets/940b5e5e-5b9e-4d18-ad36-99c76afc1df9)
+
+
