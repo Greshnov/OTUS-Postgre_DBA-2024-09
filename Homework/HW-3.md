@@ -1,7 +1,7 @@
 # OTUS-Postgre_DBA-2024-09
 ## Александр Грешнов
 
-### Homework 2. Физический уровень PostgreSQL
+### Homework 3. Физический уровень PostgreSQL
 
 #### Часть 1. Установка PostgreSQL.
 1. В VirtualBox установлена ОС Debian. Установлен PostgreSQL. (см. [Homework 1](/Homework/HW-1.md))
