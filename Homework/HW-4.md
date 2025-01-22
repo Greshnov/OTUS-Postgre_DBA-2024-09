@@ -86,28 +86,69 @@ grant readonly TO testread;
 ```
 ![image](https://github.com/user-attachments/assets/c0606a8d-669b-4ec2-ae38-5faf44f5d3ad)
 
-2. Выполнен вход под пользователем testread. Сделана выборка из таблицы t1.
+2. Выполнен вход под пользователем testread (перед этим разрешен вход по паролю - скорректирована конфигурация pg_hba.conf).
+   Сделана попытка выборки из таблицы t1.
+   Получили ошибку ***ERROR:  permission denied for table t1***.
+   Причина в том, что таблица создана в схеме public. Права пользователю (через роль readonly) выдавались только на таблицы схемы testnm. Прав на public для роли readonly нет и других ролей у пользователя тоже нет.
+   Таблица создалась в схеме public, так как при её создании не указали схему, где её создавать.
+   Видим, что схема по-умолчанию - "$user", public. То есть первой схемой по-умолчанию является схема, имя которой аналогична имени пользователя. А вторая - public. Так как схемы с именем пользователя нет, то установилась public.
+
 ```
-зайдите под пользователем testread в базу данных testdb
-сделайте select * from t1;
-получилось? (могло если вы делали сами не по шпаргалке и не упустили один существенный момент про который позже)
-напишите что именно произошло в тексте домашнего задания
-у вас есть идеи почему? ведь права то дали?
-посмотрите на список таблиц
-подсказка в шпаргалке под пунктом 20
-а почему так получилось с таблицей (если делали сами и без шпаргалки то может у вас все нормально)
+# Изменение конфигурации
+sudo nano /var/lib/postgres/14/pg_hba.conf
+peer > md5
+# Перезагрузка кластера
+sudo systemctl restart postgresql@14-main
+
+# Вход в кластер
+sudo su - postgres
+psql -p 5434
+
+# Вход под пользователем testread
+\c testdb testread
+
+select * from t1;
+
+# Просмотр текущей схемы
+select current_schema();
+
+# Просмотр схемы по-умолчанию
+show search_path;
+
 ```
+![image](https://github.com/user-attachments/assets/cd201a37-321b-4ce6-8884-442b5fb0f9d2)
+![image](https://github.com/user-attachments/assets/966e5e2b-c829-4d4c-bebc-49c7cabd0968)
+![image](https://github.com/user-attachments/assets/1f64454d-e2b8-46f6-a7ad-8eeb86895bbb)
+![image](https://github.com/user-attachments/assets/c3979f6b-1f30-4b20-833a-5f0396e55eb6)
+![image](https://github.com/user-attachments/assets/951d22ad-abc5-43d8-99a1-6834599f7450)
 
 
 
 #### Часть 6. Пересоздание таблицы
 1. Удалена таблица t1 и создана заново с явным указанием имени схемы testnm.
 ```
+sudo su - postgres
+psql -p 5434
+
+# Вход в базу
+\c testdb
+# Просмотр таблиц
+\dt
+
+# Удаление таблицы
+drop table t1;
+
+# Создание таблицы с указанием схему
+CREATE TABLE testnm.t1(c1 integer);
+INSERT INTO testnm.t1 values(1);
+
 вернитесь в базу данных testdb под пользователем postgres
 удалите таблицу t1
 создайте ее заново но уже с явным указанием имени схемы testnm
 вставьте строку со значением c1=1
 ```
+![image](https://github.com/user-attachments/assets/bdc4c767-e354-4803-8674-a33ea75efb2c)
+
 
 
 
