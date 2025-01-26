@@ -53,7 +53,7 @@ select * from pg_file_settings;
 ```
 select * from pg_settings;
 ```
-См. [Список настроек по-умолчанию](/ext/HW-5.pg_settings_default.html)
+См. [Список настроек по-умолчанию](/Homework/ext/HW-5.pg_settings_default.html)
 
 #### Часть 2. Настройка кластера PostgreSQL 15 на максимальную производительность
 1. ...
