@@ -55,14 +55,35 @@ select * from pg_settings;
 ```
 См. [Список настроек по-умолчанию](/Homework/ext/HW-5.pg_settings_default.html)
 
-#### Часть 2. Настройка кластера PostgreSQL 15 на максимальную производительность
+#### Часть 2. Нагрузка кластера через утилиту pgbench
+1. Кластер нагружен через утилиту pgbench (https://postgrespro.ru/docs/postgrespro/14/pgbench). До настроек получили следующий показатель tps = **536.435490**.
+```
+sudo su - postgres
+psql
+
+# Создаём БД test
+create database test;
+\q
+
+# Инициируем pgbench
+pgbench -i test
+
+# Запускаем pgbench
+pgbench -c 50 -j 2 -P 10 -T 60 test
+   
+```
+![image](https://github.com/user-attachments/assets/11c20267-e0f4-464e-9715-accebfa61685)\
+![image](https://github.com/user-attachments/assets/c8ababdc-a249-492e-b1fe-a3bb71889005)
+
+
+#### Часть 3. Настройка кластера PostgreSQL 15 на максимальную производительность
 1. ...
 
-#### Часть 3. Нагрузка кластера через утилиту pgbench
+#### Часть 4. Нагрузка кластера через утилиту pgbench
 1. Кластер нагружен через утилиту pgbench (https://postgrespro.ru/docs/postgrespro/14/pgbench)
 
 
-#### Часть 4. Результат
+#### Часть 5. Результат
 1. Удалось достичь значения tps ??, при этом установлены следующие параметры конфигурации.
 
 
