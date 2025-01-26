@@ -136,7 +136,7 @@ log_destination = 'csvlog'
 
 
 ```
-
+3. Выполним запрос на обновления параметров и перезагрузим кластер. В результате сгенерирован файл  **/mnt/data/15/main/postgresql.auto.conf**. Из него будут подставляться значения при загрузке кластера.
 <details>
    <summary>Запрос на изменение значений</summary>
 
@@ -185,6 +185,9 @@ ALTER SYSTEM SET log_destination TO 'csvlog';
 
 ```
 </details>
+
+![image](https://github.com/user-attachments/assets/c33e18b7-b66b-4122-ab46-509a78fb6250)
+
 
 #### Часть 4. Нагрузка кластера через утилиту pgbench
 1. Кластер нагружен через утилиту pgbench (https://postgrespro.ru/docs/postgrespro/14/pgbench)
