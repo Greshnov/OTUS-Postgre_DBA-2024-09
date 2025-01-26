@@ -213,8 +213,8 @@ ALTER SYSTEM SET log_destination TO 'csvlog';
 #### Часть 4. Нагрузка кластера через утилиту pgbench
 1. Кластер нагружен через утилиту pgbench (https://postgrespro.ru/docs/postgrespro/14/pgbench). Значительных результатов повышения производительности тест не показал - tps = **535.858264**.. 
 ![image](https://github.com/user-attachments/assets/1cf2e28c-ed45-4896-a6d0-7cc66d272ae1)
-```
-2. Скорректируем настроечные значения на предел допустимости.
+
+2. Скорректируем настроечные значения на предел допустимости. 
 
 ```
 -- Memory Configuration
@@ -227,11 +227,17 @@ ALTER SYSTEM SET maintenance_work_mem TO '2GB';
 ALTER SYSTEM SET min_wal_size TO '2GB';
 ALTER SYSTEM SET max_wal_size TO '3GB';
 ALTER SYSTEM SET checkpoint_completion_target TO '0.5';
-ALTER SYSTEM SET wal_buffers TO '16Mb';
-
+-- Second option
+-- ALTER SYSTEM SET checkpoint_completion_target TO '0.2';
+ALTER SYSTEM SET wal_buffers TO '16MB';
 ```
 
+
 #### Часть 5. Результат
-1. Удалось достичь значения tps ??, при этом установлены следующие параметры конфигурации, описанные выше. Выбор их конфигурирования основывается на их наибольшем влиянии на производительность кластера согласно официальной документации и рекомендаций, размещенным на [https://wiki.postgresql.org/wiki/Tuning_Your_PostgreSQL_Server](https://wiki.postgresql.org/wiki/Tuning_Your_PostgreSQL_Server)
+1. Удалось достичь значения tps **516.222765** и tps **500.444456** (при checkpoint_completion_target = 0.2), при этом установлены следующие параметры конфигурации, описанные выше. Выбор их конфигурирования основывается на их наибольшем влиянии на производительность кластера согласно официальной документации и рекомендаций, размещенным на [https://wiki.postgresql.org/wiki/Tuning_Your_PostgreSQL_Server](https://wiki.postgresql.org/wiki/Tuning_Your_PostgreSQL_Server)
+
+![image](https://github.com/user-attachments/assets/e1dfaeca-fd12-4f13-9a04-f0389b974aed)
+![image](https://github.com/user-attachments/assets/0af01d72-fffb-4a93-af97-6e5a3b30297a)
+
 
 
