@@ -24,13 +24,25 @@ sudo nano /etc/postgresql/15/main/pg_hba.conf
 # Перезагрузка
 sudo systemctl restart postgresql.service
 
-# Установка пароля пользоватлю postgres
+# Вход под пользователем postgres
 sudo su - postgres
 psql
+
+# Установка пароля пользоватлю postgres
 ALTER USER postgres WITH PASSWORD 'postgres';
+
+# Разрешение прослушивания портов (для доступа извне)
+ALTER SYSTEM SET listen_addresses TO '*';
+# Просмотр разрешений
+show listen_addresses;
+
+# Перезагрузка
+sudo systemctl restart postgresql.service
+
 ```
 
-![image](https://github.com/user-attachments/assets/ff273bce-6c61-4382-a21f-8ce8c94c36f2)
+![image](https://github.com/user-attachments/assets/ff273bce-6c61-4382-a21f-8ce8c94c36f2)\
+![image](https://github.com/user-attachments/assets/dbe735eb-ac40-44ee-8c35-a9325e553243)
 
 3. Текущие значения настроек
 ```
@@ -38,6 +50,10 @@ select * from pg_file_settings;
 ```
 ![image](https://github.com/user-attachments/assets/1e11a0a8-a962-47c4-bb37-0c138e9d8d04)
 
+```
+select * from pg_settings;
+```
+См. 
 
 #### Часть 2. Настройка кластера PostgreSQL 15 на максимальную производительность
 1. ...
