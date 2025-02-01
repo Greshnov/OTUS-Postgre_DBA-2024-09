@@ -6,29 +6,31 @@
 #### Часть 1. Создание ВМ, установка PostgreSQL
 1. В VirtualBox создана виртуальная машина (2core CPU, 4Gb RAM, SSD(VDI)) 10Gb), установлена ОС Debian. Установлен PostgreSQL 15. (см. [Homework 1](/Homework/HW-1.md)).
 ```
+# Проверяем, запушен ли сервис PostgreSQL
+sudo systemctl status postgresql.service
+
 # Заходим под пользователем postgres
 sudo su - postgres
 # Созданные кластеры
 pg_lsclusters
 ```
+![image](https://github.com/user-attachments/assets/3171af9d-4bf2-4c71-bd05-7a6221e7b7d1)
+![image](https://github.com/user-attachments/assets/8360bdca-58b9-4b5d-8a72-612321a07bbd)
+
 
 #### Часть 2. Нагрузка кластера через утилиту pgbench
-1. Кластер нагружен через утилиту pgbench (https://postgrespro.ru/docs/postgrespro/14/pgbench).Получили следующий показатель tps = **??**.
+1. Кластер нагружен через утилиту pgbench (https://postgrespro.ru/docs/postgrespro/14/pgbench).Получили следующий показатель tps = 583.595052**.
 ```
 sudo su - postgres
-psql
 
-# Создаём БД test
-create database postgres;
-\q
-
-# Инициируем pgbench
+# Инициируем pgbench (создаются таблицы для теста в базе postgres)
 pgbench -i postgres
 
 # Запускаем pgbench
-pgbench -c 8 -P 6 -T 60 -U postgres
+pgbench -c 8 -P 6 -T 60 -U postgres postgres
    
 ```
+![image](https://github.com/user-attachments/assets/e7249f77-c044-4eb1-b3d0-a5b9c3b9b23d)
 
 
 #### Часть 3. Изменение параметров кластера и повторная нагрузка
