@@ -4,8 +4,13 @@
 ### Homework 6. MVCC, vacuum и autovacuum 
 
 #### Часть 1. Создание ВМ, установка PostgreSQL
-1. В VirtualBox создана виртуальная машина (2core CPU, 4Gb RAM, SSD(VDI)) 10Gb), установлена ОС Debian. Установлен PostgreSQL 15. (см. [Homework 1](/Homework/HW-1.md)).
+1. В VirtualBox создана новая виртуальная машина (2core CPU, 4Gb RAM, SSD(VDI)) 10Gb), установлена ОС Debian. Установлен PostgreSQL 15. (см. [Homework 1](/Homework/HW-1.md)).
 ```
+# Информация о процессоре
+lscpu
+# Информация о оперативной памяти
+free -m
+
 # Проверяем, запушен ли сервис PostgreSQL
 sudo systemctl status postgresql.service
 
@@ -15,12 +20,16 @@ sudo su - postgres
 pg_lsclusters
 ```
 ![image](https://github.com/user-attachments/assets/3171af9d-4bf2-4c71-bd05-7a6221e7b7d1)
+![image](https://github.com/user-attachments/assets/4917fb5f-d651-4c8d-8499-21430438da8e)
+
+
 ![image](https://github.com/user-attachments/assets/8360bdca-58b9-4b5d-8a72-612321a07bbd)
 
 
 #### Часть 2. Нагрузка кластера через утилиту pgbench
 1. Кластер нагружен через утилиту pgbench (https://postgrespro.ru/docs/postgrespro/14/pgbench).Получили следующий показатель tps = 583.595052**.
 ```
+# Заходим под пользователем postgres
 sudo su - postgres
 
 # Инициируем pgbench (создаются таблицы для теста в базе postgres)
@@ -36,11 +45,6 @@ pgbench -c 8 -P 6 -T 60 -U postgres postgres
 #### Часть 3. Изменение параметров кластера и повторная нагрузка
 1. Установлены следующие параметры кластера
 ```
-# Информация о процессоре
-lscpu
-# Информация о оперативной памяти
-free -m
-
 max_connections = 40
 shared_buffers = 1GB
 effective_cache_size = 3GB
@@ -53,34 +57,53 @@ effective_io_concurrency = 2
 work_mem = 65536kB
 min_wal_size = 4GB
 max_wal_size = 16GB
-
-
+```
+Запрос на применение изменений
+```
+# Заходим под пользователем postgres
+sudo su - postgres
+psql
 
 -- Memory Configuration
-ALTER SYSTEM SET shared_buffers TO '768MB';
-ALTER SYSTEM SET effective_cache_size TO '2GB';
-ALTER SYSTEM SET work_mem TO '15MB';
-ALTER SYSTEM SET maintenance_work_mem TO '154MB';
+ALTER SYSTEM SET shared_buffers TO '1GB';
+ALTER SYSTEM SET effective_cache_size TO '3GB';
+ALTER SYSTEM SET work_mem TO '65536kB';
+ALTER SYSTEM SET maintenance_work_mem TO '512MB';
 
 -- Checkpoint Related Configuration
-ALTER SYSTEM SET min_wal_size TO '2GB';
-ALTER SYSTEM SET max_wal_size TO '3GB';
+ALTER SYSTEM SET min_wal_size TO '4GB';
+ALTER SYSTEM SET max_wal_size TO '16GB';
 ALTER SYSTEM SET checkpoint_completion_target TO '0.9';
-ALTER SYSTEM SET wal_buffers TO '-1';
+ALTER SYSTEM SET wal_buffers TO '16MB';
 
 -- Network Related Configuration
-ALTER SYSTEM SET listen_addresses TO '*';
-ALTER SYSTEM SET max_connections TO '100';
+ALTER SYSTEM SET max_connections TO '40';
 
 -- Storage Configuration
 ALTER SYSTEM SET random_page_cost TO '4.0';
 ALTER SYSTEM SET effective_io_concurrency TO '2';
 
+-- Other
+ALTER SYSTEM SET default_statistics_target TO '500';
 
 ```
 
-2. Кластер нагружен через утилиту pgbench с теми же параметрами. Получили следующий показатель tps = **??**. Изменение произошло из-за...
- 
+![image](https://github.com/user-attachments/assets/c5bce6c3-c7dc-45c6-9fbb-5e631a485b23)
+
+
+2. Кластер нагружен через утилиту pgbench с теми же параметрами. Получили следующий показатель tps = **567.787385**. Значительных изменений не произошло. Небольшой выигрыш получился из-за лучшего набора конфигурации для текущих тех. условий (процессоры, память, диск). Однако, min_wal_size установлены впритых RAM, веделенную ВМ, а max_wal_size превышает RAM в четыре раза. Это улучшает производительность, но черевато выходу кластера и ВМ из строя - риск переполнения.
+ ```
+# Заходим под пользователем postgres
+sudo su - postgres
+
+# Инициируем pgbench (создаются таблицы для теста в базе postgres)
+pgbench -i postgres
+
+# Запускаем pgbench
+pgbench -c 8 -P 6 -T 60 -U postgres postgres
+   
+```
+![image](https://github.com/user-attachments/assets/ba90f8e7-71b1-479b-a34b-50f864457dbb)
 
 <details>
    <summary>Описание наиболее важных параметров</summary>
