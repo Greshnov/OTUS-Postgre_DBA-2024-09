@@ -125,49 +125,73 @@ pgbench -c 8 -P 6 -T 60 -U postgres postgres
 9. checkpoint_timeout - Чем реже происходит сбрасывание, тем дольше будет восстановление БД после сбоя. Значение по умолчанию 5 минут, рекомендуемое - от 30 минут до часа. 
 Необходимо "синхронизировать" два этих параметра. Для этого можно поставить checkpoint_timeout в выбранный промежуток, включить параметр log_checkpoints и по нему отследить, сколько было записано буферов. После чего подогнать параметр max_wal_size.
 
-checkpoint_completion_target 
-default_statistics_target 
-random_page_cost 
-effective_io_concurrency 
-
 </details>
 
 #### Часть 4. Создание таблицы с 1 млн строк
 1. Создана таблица test с текстовым полем val. Заполнена данными в размере 1млн строк 
 ```
-...
+# Заходим под пользователем postgres
+sudo su - postgres
+
+psql
+
+create table test (txt char(100));
+
+insert into test(txt) select 'some value' from generate_series(1,1000000);
+
+select count(*) from test;
+
+```
+![image](https://github.com/user-attachments/assets/b4ff4890-4393-4410-a847-158a6095db44)
+
+2. Размер файла с таблицей равен 128 MB. 
+```
+select pg_size_pretty(pg_total_relation_size('test'));
 ```
 
-2. Размер файла с таблицей равен ??. 
-```
-...
-```
+![image](https://github.com/user-attachments/assets/b715df80-7ab2-4531-beba-0b547cf151c2)
+
 
 #### Часть 5. Обновление записей таблицы и контроль размера файла
 1. Пять раз обновлены все записи - к каждому значению добавлен произвольный символ 
 ```
-...
+update test set txt = txt || '1';
+update test set txt = txt || '2';
+update test set txt = txt || '3';
+update test set txt = txt || '4';
+update test set txt = txt || '5';
 ```
+![image](https://github.com/user-attachments/assets/d8cc4029-b990-4d72-a9e9-0302eed8d267)
 
-2. Количество мертвых строчек в таблице **...**, автовакуум последний раз приходил ??.
-```
-...
-```
 
-3. Спустя 5 минут пришел автовакуум. Размер файла с таблицей равен ??. 
+2. Количество мертвых строчек в таблице **3230869**, автовакуум последний раз приходил до запуска обновления таблицы.
 ```
-...
+SELECT relname, n_live_tup, n_dead_tup, trunc(100*n_dead_tup/(n_live_tup+1))::float "ratio%", last_autovacuum FROM pg_stat_user_TABLEs WHERE relname = 'test';
+
 ```
+![image](https://github.com/user-attachments/assets/e970cecf-79bd-4e0c-8b73-f10a3fb7ba10)
+
+
+3. Спустя минуту пришел автовакуум. Размер файла с таблицей равен ??. 
+```
+SELECT relname, n_live_tup, n_dead_tup, trunc(100*n_dead_tup/(n_live_tup+1))::float "ratio%", last_autovacuum FROM pg_stat_user_TABLEs WHERE relname = 'test';
+
+select pg_size_pretty(pg_total_relation_size('test'));
+```
+fr
+
 
 4. Пять раз обновлены все записи - к каждому значению добавлен произвольный символ.
 ```
 ...
 ```
 
-5. Размер файла с таблицей равен ??. 
+5. Размер файла с таблицей равен 542Mb. 
 ```
 ...
 ```
+![image](https://github.com/user-attachments/assets/10cdbf07-fc99-48d9-bddc-e302ac9af209)
+
 
 6. Отключен автовакуум на таблице test. 
 ```
