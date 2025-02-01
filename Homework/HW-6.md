@@ -189,23 +189,37 @@ update test set txt = txt || '4';
 update test set txt = txt || '5';
 ```
 
-5. Размер файла с таблицей равен 542Mb. 
+5. Размер файла с таблицей равен 512Mb (немного уменьшился по сравнению с предыдущим). 
 ```
 select pg_size_pretty(pg_total_relation_size('test'));
 ```
-![image](https://github.com/user-attachments/assets/766cdcf7-fd29-42bb-9574-d82ebcb6ddce)
-
+![image](https://github.com/user-attachments/assets/985bd4b9-a883-4b78-8ca8-08bb5e7eedbd)
 
 
 6. Отключен автовакуум на таблице test. 
 ```
-...
+ALTER TABLE test SET (autovacuum_enabled = off);
 ```
 
-7. Десять раз обновлены все записи - к каждому значению добавлен произвольный символ.
+7. Десять раз обновлены все записи - к каждому значению добавлен произвольный символ. В результате - при десятом обновлении не хватило дискового пространства ВМ.
 ```
-...
+update test set txt = txt || '1';
+update test set txt = txt || '2';
+update test set txt = txt || '3';
+update test set txt = txt || '4';
+update test set txt = txt || '5';
+update test set txt = txt || '6';
+update test set txt = txt || '7';
+update test set txt = txt || '8';
+update test set txt = txt || '9';
+update test set txt = txt || '0';
 ```
+![image](https://github.com/user-attachments/assets/9c1cef2b-2a44-4331-97f2-dec0bf45d63a)\
+Соединение с кластером потеряно.
+![image](https://github.com/user-attachments/assets/fa38360f-dc36-4d8d-a727-f40c05a05c29)\
+Диск занят под завязку.
+![image](https://github.com/user-attachments/assets/ab2e9b9e-ea2d-458d-9a08-c027fe1ba433)
+
 
 8. Размер файла с таблицей равен ??. Так как ??, то размер файла ??.
 ```
@@ -214,7 +228,7 @@ select pg_size_pretty(pg_total_relation_size('test'));
 
 9. Автовакуум включен на таблице test.
 ```
-...
+ALTER TABLE test SET (autovacuum_enabled = on);
 ```
 
 
