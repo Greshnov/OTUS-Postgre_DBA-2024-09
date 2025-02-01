@@ -218,19 +218,21 @@ update test set txt = txt || '0';
 Соединение с кластером потеряно.
 ![image](https://github.com/user-attachments/assets/fa38360f-dc36-4d8d-a727-f40c05a05c29)\
 Диск занят под завязку.
-![image](https://github.com/user-attachments/assets/ab2e9b9e-ea2d-458d-9a08-c027fe1ba433)
+![image](https://github.com/user-attachments/assets/ab2e9b9e-ea2d-458d-9a08-c027fe1ba433)\
+Попытка перезапуска кластера результата не дала.
+![image](https://github.com/user-attachments/assets/9c3df3d1-f169-4c4a-aaeb-c0ba7251c2b1)
 
 
-8. Размер файла с таблицей равен > 1.283 GB. Так как автовакуум был отключен, то размер файла начал разразстаться при каждом обновлении - не происходило удаление мёртвых записей и сжатие файла.
+
+8. Размер файла с таблицей равен > 1.283 GB (найдены соответствующие файлы на диске). Так как автовакуум был отключен, то размер файла начал разразстаться при каждом обновлении - не происходило удаление мёртвых записей и сжатие файла.
 ```
-...
 sudo ls -lh /var/lib/postgresql/15/main/base/5/
 ```
 
 ![image](https://github.com/user-attachments/assets/c68a742b-bd3a-4e77-b3de-fbafbd5ac163)
 
 
-9. Автовакуум включен на таблице test.
+9. После восстановления кластера (путём добавления дополнительно диска и переноса данных по аналогии с [Homework 3](/Homework/HW-3.md) ), автовакуум включен на таблице test.
 ```
 ALTER TABLE test SET (autovacuum_enabled = on);
 ```
