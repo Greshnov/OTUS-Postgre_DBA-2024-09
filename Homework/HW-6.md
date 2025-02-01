@@ -221,10 +221,14 @@ update test set txt = txt || '0';
 ![image](https://github.com/user-attachments/assets/ab2e9b9e-ea2d-458d-9a08-c027fe1ba433)
 
 
-8. Размер файла с таблицей равен ??. Так как ??, то размер файла ??.
+8. Размер файла с таблицей равен > 1.283 GB. Так как автовакуум был отключен, то размер файла начал разразстаться при каждом обновлении - не происходило удаление мёртвых записей и сжатие файла.
 ```
 ...
+sudo ls -lh /var/lib/postgresql/15/main/base/5/
 ```
+
+![image](https://github.com/user-attachments/assets/c68a742b-bd3a-4e77-b3de-fbafbd5ac163)
+
 
 9. Автовакуум включен на таблице test.
 ```
