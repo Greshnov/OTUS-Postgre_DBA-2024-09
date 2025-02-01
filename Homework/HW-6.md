@@ -164,7 +164,7 @@ update test set txt = txt || '5';
 ![image](https://github.com/user-attachments/assets/d8cc4029-b990-4d72-a9e9-0302eed8d267)
 
 
-2. Количество мертвых строчек в таблице **3230869**, автовакуум последний раз приходил до запуска обновления таблицы.
+2. Количество мертвых строчек в таблице **3230869**, автовакуум последний раз приходил после одного из обновлений таблицы.
 ```
 SELECT relname, n_live_tup, n_dead_tup, trunc(100*n_dead_tup/(n_live_tup+1))::float "ratio%", last_autovacuum FROM pg_stat_user_TABLEs WHERE relname = 'test';
 
@@ -172,25 +172,29 @@ SELECT relname, n_live_tup, n_dead_tup, trunc(100*n_dead_tup/(n_live_tup+1))::fl
 ![image](https://github.com/user-attachments/assets/e970cecf-79bd-4e0c-8b73-f10a3fb7ba10)
 
 
-3. Спустя минуту пришел автовакуум. Размер файла с таблицей равен ??. 
+3. Спустя время пришел автовакуум. Количество мертвых стало равным нулю.  Размер файла с таблицей равен 610 MB. 
 ```
 SELECT relname, n_live_tup, n_dead_tup, trunc(100*n_dead_tup/(n_live_tup+1))::float "ratio%", last_autovacuum FROM pg_stat_user_TABLEs WHERE relname = 'test';
 
 select pg_size_pretty(pg_total_relation_size('test'));
 ```
-fr
-
+![image](https://github.com/user-attachments/assets/ea4b9f33-f9cb-42cb-b754-ed77c283e959)
 
 4. Пять раз обновлены все записи - к каждому значению добавлен произвольный символ.
 ```
-...
+update test set txt = txt || '1';
+update test set txt = txt || '2';
+update test set txt = txt || '3';
+update test set txt = txt || '4';
+update test set txt = txt || '5';
 ```
 
 5. Размер файла с таблицей равен 542Mb. 
 ```
-...
+select pg_size_pretty(pg_total_relation_size('test'));
 ```
-![image](https://github.com/user-attachments/assets/10cdbf07-fc99-48d9-bddc-e302ac9af209)
+![image](https://github.com/user-attachments/assets/766cdcf7-fd29-42bb-9574-d82ebcb6ddce)
+
 
 
 6. Отключен автовакуум на таблице test. 
