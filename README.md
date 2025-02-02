@@ -8,7 +8,7 @@
 3. [Физический уровень PostgreSQL](/Homework/HW-3.md)
 4. [Логический уровень PostgreSQL](/Homework/HW-4.md)
 5. [Настройка PostgreSQL](/Homework/HW-5.md)
-6. [MVCC, vacuum и autovacuum.](/Homework/HW-6.md)
+6. [MVCC, vacuum и autovacuum](/Homework/HW-6.md)
 7. [Блокировки ](/Homework/HW-7.md)
 8. [Журналы](/Homework/HW-8.md)
 9. [Виды индексов. Работа с индексами и оптимизация запросов](/Homework/HW-9.md)
