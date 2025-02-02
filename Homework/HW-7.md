@@ -156,7 +156,7 @@ UPDATE accounts SET amount = amount + 100.00 WHERE acc_no = 1;
 ```
 ![image](https://github.com/user-attachments/assets/749f0276-8c62-4535-ba18-c6dc2a81eed4)
 
-**Первая сессия**. Видим, что вторая транзакция заблокирована первой транзакцией (выделено зеленым) и пытается захватить блокировку версии строки (выделено красным).
+**Первая сессия**. Видим, что вторая транзакция захватила версию строки (выделено красным) - granted = t, значит доступ есть, но заблокирована первой транзакцией (выделено зеленым) ShareLock granted = f, значит доступа нет.
 ```
 SELECT * FROM locks_v WHERE pid = 4583;
 
@@ -178,7 +178,7 @@ UPDATE accounts SET amount = amount + 100.00 WHERE acc_no = 1;
 ```
 ![image](https://github.com/user-attachments/assets/b6bdbb2c-0454-40a9-9d1f-8c07bfdd3075)
 
-**Первая сессия**. Видим, что третья транзакция заблокирована и пытается толкько захватить блокировку версии строки (выделено красным).
+**Первая сессия**. Видим, что третья транзакция заблокирована и пытается захватить блокировку версии строки (выделено красным), но безуспешно, так как операция заблокирована второй транзакцией (granted = f, значит доступа нет).
 ```
 SELECT * FROM locks_v WHERE pid = 4639;
 
@@ -187,10 +187,31 @@ SELECT * FROM locks_v WHERE pid = 4639;
 ![image](https://github.com/user-attachments/assets/12ccdf51-7b78-4d0c-be23-04c9d36ee57c)
 
 
-2. В представлении pg_locks видим список блокировок
+2. В представлении pg_stat_activity видим очередь блокировок
 ```
-Пришлите список блокировок и объясните, что значит каждая.
+SELECT pid, wait_event_type, wait_event, pg_blocking_pids(pid)
+FROM pg_stat_activity
+WHERE backend_type = 'client backend' ORDER BY pid;
 ```
+![image](https://github.com/user-attachments/assets/899d14fe-265e-4db6-8272-554394a5b3e0)
+
+3. Завершим последовательно транзакции во всех трёх сессиях.
+**Первая сессия**
+```
+COMMIT;
+SELECT * FROM locks_v WHERE pid = 4512;
+SELECT * FROM locks_v WHERE pid = 4583;
+SELECT * FROM locks_v WHERE pid = 4639;
+```
+
+После завершения первой видим, что запрос во второй транзакции выполнился, вторая транзакция разблокирована (нет значений granted = f). Третья транзакция ожидает выполнения второй (появилась запись ShareLock granted = f).\
+![image](https://github.com/user-attachments/assets/405a18c6-f83a-4402-874b-c1f80bbfb41b)\
+
+После завершения второй видим, что запрос в третьей транзакции выполнился, третья транзакция разблокирована (нет значений granted = f).\
+![image](https://github.com/user-attachments/assets/a8cb50a7-3f81-4afe-b586-ed4fac22b844)\
+
+После завершения третьей транзакции блокировок нет.\
+![image](https://github.com/user-attachments/assets/2a528dad-6319-421c-a1b2-b2a392d58da4)
 
 
 #### Часть 3. Моделирование взаимоблокировки (три транзакции)
