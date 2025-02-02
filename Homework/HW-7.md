@@ -108,10 +108,84 @@ tail -n 10 /var/log/postgresql/postgresql-15-main.log
 
 
 #### Часть 2. Моделирование блокировки
-1. Смоделированы блокировки при обновлении одной и той же строки тремя командами UPDATE в разных сеансах. 
+1. Смоделированы блокировки при обновлении одной и той же строки тремя командами UPDATE в разных сеансах.\
+
+Для удобства мониторинга построено представление над pg_locks. Сделан вывод чуть более компактным и ограничен только интересными блокировками (отбрасываем блокировки виртуальных номеров транзакций, индекса на таблице accounts, pg_locks и самого представления).
 ```
-...
+\c locks
+
+CREATE VIEW locks_v AS
+SELECT pid,
+       locktype,
+       CASE locktype
+         WHEN 'relation' THEN relation::regclass::text
+         WHEN 'transactionid' THEN transactionid::text
+         WHEN 'tuple' THEN relation::regclass::text||':'||tuple::text
+       END AS lockid,
+       mode,
+       granted
+FROM pg_locks
+WHERE locktype in ('relation','transactionid','tuple')
+AND (locktype != 'relation' OR relation = 'accounts'::regclass);
 ```
+
+**Первая сессия**. Транзакция удерживает блокировку таблицы и собственного номера
+```  
+-- Первая транзакция
+BEGIN;
+SELECT txid_current(), pg_backend_pid();
+
+-- Обновление строки
+UPDATE accounts SET amount = amount + 100.00 WHERE acc_no = 1;
+SELECT * FROM locks_v WHERE pid = 4512;
+
+```
+![image](https://github.com/user-attachments/assets/322c0ace-c98d-4439-9c0f-5c740a598bae)
+
+**Вторая сессия**. Транзакция заблокирована.
+```
+sudo su - postgres
+psql
+\c locks
+
+-- Вторая транзакция
+BEGIN;
+SELECT txid_current(), pg_backend_pid();
+-- Обновление строки
+UPDATE accounts SET amount = amount + 100.00 WHERE acc_no = 1;
+```
+![image](https://github.com/user-attachments/assets/749f0276-8c62-4535-ba18-c6dc2a81eed4)
+
+**Первая сессия**. Видим, что вторая транзакция заблокирована первой транзакцией (выделено зеленым) и пытается захватить блокировку версии строки (выделено красным).
+```
+SELECT * FROM locks_v WHERE pid = 4583;
+
+```
+![image](https://github.com/user-attachments/assets/7563d09f-e902-46cb-84f3-bcfda23c809b)
+
+
+**Третья сессия**. Транзакция заблокирована.
+```
+sudo su - postgres
+psql
+\c locks
+
+-- Третья транзакция
+BEGIN;
+SELECT txid_current(), pg_backend_pid();
+-- Обновление строки
+UPDATE accounts SET amount = amount + 100.00 WHERE acc_no = 1;
+```
+![image](https://github.com/user-attachments/assets/b6bdbb2c-0454-40a9-9d1f-8c07bfdd3075)
+
+**Первая сессия**. Видим, что третья транзакция заблокирована и пытается толкько захватить блокировку версии строки (выделено красным).
+```
+SELECT * FROM locks_v WHERE pid = 4639;
+
+```
+
+![image](https://github.com/user-attachments/assets/12ccdf51-7b78-4d0c-be23-04c9d36ee57c)
+
 
 2. В представлении pg_locks видим список блокировок
 ```
