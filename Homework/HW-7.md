@@ -216,10 +216,65 @@ SELECT * FROM locks_v WHERE pid = 4639;
 
 #### Часть 3. Моделирование взаимоблокировки (три транзакции)
 1. Воспроизведена взаимоблокировка трех транзакций.
+**Первая транзакция**. Шаг 1
 ```
-...
+-- Уменьшение счёта 1 на 100
+BEGIN;
+UPDATE accounts SET amount = amount - 100.00 WHERE acc_no = 1;
 ```
-2. Изучая журнал сообщений можно разобраться в ситуации - ... 
+**Вторая транзакция**. Шаг 1  
+```
+-- Перенос значения 10 со второго счёта на первый (сначала уменьшается второй)
+BEGIN;
+UPDATE accounts SET amount = amount - 10.00 WHERE acc_no = 2;
+```
+**Первая транзакция**. Шаг 2
+```
+-- Увеличивает счёт 2 на 100
+UPDATE accounts SET amount = amount + 100.00 WHERE acc_no = 2;
+```
+**Третья транзакция**. Шаг 1 
+```
+-- Увеличение счёта 1 на 10
+BEGIN;
+UPDATE accounts SET amount = amount + 10.00 WHERE acc_no = 1;
+```
+
+**Вторая транзакция**. Шаг 2 
+```
+-- Перенос значения 10 со второго счёта на первый (увеличиваем первый)
+UPDATE accounts SET amount = amount + 10.00 WHERE acc_no = 1;
+```
+
+Второй шаг в первой транзакции ожидает завершения второй транзакции, третья транзакция ожидает завершения первой, а второй шаг во второй транзакции ожидает третью.\
+Видим, что в результате сервер обнаружил взаимоблокировку во второй транзакции и сбросил соединение.
+Первая транзакция.
+![image](https://github.com/user-attachments/assets/38ba2c47-3a1d-4ce9-8dcb-ff65465598db)\
+Вторая транзакция.
+![image](https://github.com/user-attachments/assets/0b68b86f-ec35-481e-a987-4e7eb3005db7)
+Третья транзакция.
+![image](https://github.com/user-attachments/assets/11d1567c-466d-4e43-a23a-8707b3cbbca2)
+
+
+В четвертой сессии в представлении pg_stat_activity видим очередь блокировок
+```
+SELECT pid, wait_event_type, wait_event, pg_blocking_pids(pid)
+FROM pg_stat_activity
+WHERE backend_type = 'client backend' ORDER BY pid;
+```
+![image](https://github.com/user-attachments/assets/bb321c7c-9c4b-423e-abd7-843ac77f7ded)
+
+2. Откатим все транзакции
+```
+ROLLBACK;
+```
+
+2. Изучая журнал сообщений можно разобраться в ситуации - указаны pid транзакций и последние запросы в них, которые привели к взаимоблокировке. Но истинный запрос, приведший к блокировке не виден (Шаг 1 первой транзакции). 
+   ```
+    tail -n 40 /var/log/postgresql/postgresql-15-main.log
+
+   ```
+![image](https://github.com/user-attachments/assets/4c120890-f485-4d1d-9ecb-6ddea301fb26)
 
 
 #### Часть 4. Моделирование взаимоблокировки (две транзакции)
