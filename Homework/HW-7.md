@@ -13,7 +13,28 @@
 sudo su - postgres
 # Созданные кластеры
 pg_lsclusters
+
+psql
+
+# Включаем логирование блокировок
+ALTER SYSTEM SET log_lock_waits = on;
+ALTER SYSTEM SET deadlock_timeout = 200;
+
+# Проверяет, требуется ли перезагрузка
+SELECT pg_reload_conf();
+
+\q
+# Перезапускаем кластер
+pg_ctlcluster 15 main restart
+
+psql
+
+# Показываем установленное значение
+SHOW deadlock_timeout;
+
 ```
+![image](https://github.com/user-attachments/assets/2b097c12-cd12-45f9-8c92-38a16e0f2d78)
+
 
 3. Воспроизведена ситуация, при которой в журнале появились сообщения о блокировках.
 ```
