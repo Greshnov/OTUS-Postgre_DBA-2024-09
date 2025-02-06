@@ -103,29 +103,86 @@ psql -p 5433
 
 #Текущая настройка
 SHOW data_checksums;
-```
-![image](https://github.com/user-attachments/assets/772be927-1736-4eba-bd53-b07e4f9f9b0a)
+\q
 
-```
 # Останавливаем кластер
 pg_ctlcluster 15 main-sum stop
 
 # Устанавливаем использование контрольной суммы
+/usr/lib/postgresql/15/bin/pg_checksums -e -D /var/lib/postgresql/15/main-sum
+
+# Запускаем кластер
+pg_ctlcluster 15 main-sum start
+
 ```
+![image](https://github.com/user-attachments/assets/8a46da98-8f1b-4bc2-8700-b35173495482)
 
 
 
-2. Создана таблица с несколькими значениями. Выключите кластер. Измените пару байт в таблице. Включите кластер и сделайте выборку из таблицы. Что и почему произошло? как проигнорировать ошибку и продолжить работу?
+2. Создана таблица с несколькими значениями.
 ```
-...
-```
+create table test(i int);
 
-3. Кластер выключен. Изменена пара байт в таблице. Включите кластер и сделайте выборку из таблицы. Что и почему произошло? как проигнорировать ошибку и продолжить работу?
-```
-...
-```
+# Добавим значения
+insert into test select s.id from generate_series(1, 100) as s(id); 
+select * from test limit 10;
 
-4. Кластер включен и сделана выборка из таблицы. Что и почему произошло? как проигнорировать ошибку и продолжить работу?
+# Адрес файла таблицы
+SELECT pg_relation_filepath('tablename');
 ```
-...
+![image](https://github.com/user-attachments/assets/28a39d73-e419-4e10-ab97-7fa55ff27b28)
+![image](https://github.com/user-attachments/assets/37e91888-046d-42de-b108-830257d043bf)
+
+
+
+3. Кластер выключен. Добавлено несколько символов в конец файла таблицы. Далее кластер включен и сделана выборка из таблицы. 
 ```
+\q
+# Выключаем кластер
+pg_ctlcluster 15 main-sum stop
+
+# Изменяем файл
+nano /var/lib/postgresql/15/main-sum/base/5/16388
+
+```
+![image](https://github.com/user-attachments/assets/0fb1f341-835e-40a8-b1c5-faa183617e71)
+
+
+4. Кластер включен. При попытке выполнить выборку из таблицы получена ошибка несоответствия контрольной суммы - так как файл был изменейн нами напрямую и кластер видит, что он не соответствует тому, о котором знает он на момент выключения. 
+```
+# Запускаем кластер
+pg_ctlcluster 15 main-sum start
+
+psql -p 5433
+# Делаем выборку
+select * from test limit 10;
+```
+![image](https://github.com/user-attachments/assets/b14f1761-c0f7-4a43-bf8f-6df91b8553d6)
+![image](https://github.com/user-attachments/assets/48bf5fd0-97d7-4af4-b106-d0498e8a4e1b)
+
+Проигнорировать ошибку и продолжить работу можно установкой настройки ignore_checksum_failure. Естественно, после восстановления нужно убрать. 
+В нашем случае после установки пзначения on, выдаётся предупреждение о несоответствии контрольной суммы. При этом выборка выполняется, но видим, что данные в ней уже не соответствуют прежним (до изменения файла).
+```
+# Текущая настройка
+show ignore_checksum_failure
+# Меняем настройку
+alter system set ignore_checksum_failure = on;
+
+\q
+# Выключаем кластер
+pg_ctlcluster 15 main-sum stop
+
+# Проверяем контрольную сумму
+/usr/lib/postgresql/15/bin/pg_checksums -c -D /var/lib/postgresql/15/main-sum
+
+# Включаем кластер
+pg_ctlcluster 15 main-sum start
+
+# Повторяем выборку
+psql -p 5433
+select * from test limit 10;
+
+```
+![image](https://github.com/user-attachments/assets/df7d2c54-6494-410a-b408-60adc28cd010)
+
+
