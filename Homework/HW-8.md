@@ -14,19 +14,39 @@ sudo su - postgres
 # Созданные кластеры
 pg_lsclusters
 
-...
+psql
+# Текущее значение настройки выполнения контрольной точки
+\x;
+select * from pg_settings where name = 'checkpoint_timeout';
+# или
+show checkpoint_timeout;
+
+# Устанавливаем значение настройки выполнения контрольной точки
+ALTER SYSTEM SET checkpoint_timeout TO '30';
+
+# Перезапускаем сервер
+\q
+pg_ctlcluster 15 main stop
+pg_ctlcluster 15 main start
+
 ```
+![image](https://github.com/user-attachments/assets/5c851c16-fb8b-4dd8-91cf-9467ae6ca5c7)
+
 
 #### Часть 2. Нагрузка
-1. В течение 10 минут c помощью утилиты pgbench подавана нагрузка.
+1. В течение 10 минут c помощью утилиты pgbench подана нагрузка.
 ```
-...
+pgbench -i postgres
+pgbench -P 10 -P 60 -T 600 postgres
 ```
+![image](https://github.com/user-attachments/assets/3c3fd333-a019-4e69-bd9a-3bcbcd9a27af)
 
 2. Измерен объем сгенерированных журнальных файлов за время нагрузки. В среднем на одну контрольную точку приходится объём, равный ???.
 ```
 ...
 ```
+![image](https://github.com/user-attachments/assets/95d6506f-c3b5-4896-8bcc-731682088f4e)
+
 
 3. По данным статистики: все ли контрольные точки выполнялись точно по расписанию. Почему так произошло?
 
