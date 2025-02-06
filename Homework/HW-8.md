@@ -92,8 +92,28 @@ pgbench -P 10 -P 60 -T 60 postgres
 #### Часть 4. Кластер с контрольной суммой
 1. Создан новый кластер с включенной контрольной суммой страниц.
 ```
+pg_createcluster 15 main-sum
+pg_ctlcluster 15 main-sum restart
+pg_lsclusters
+```
+![image](https://github.com/user-attachments/assets/6c745e89-b77d-4c90-8dd8-c97e55dce83d)
 
 ```
+psql -p 5433
+
+#Текущая настройка
+SHOW data_checksums;
+```
+![image](https://github.com/user-attachments/assets/772be927-1736-4eba-bd53-b07e4f9f9b0a)
+
+```
+# Останавливаем кластер
+pg_ctlcluster 15 main-sum stop
+
+# Устанавливаем использование контрольной суммы
+```
+
+
 
 2. Создана таблица с несколькими значениями. Выключите кластер. Измените пару байт в таблице. Включите кластер и сделайте выборку из таблицы. Что и почему произошло? как проигнорировать ошибку и продолжить работу?
 ```
