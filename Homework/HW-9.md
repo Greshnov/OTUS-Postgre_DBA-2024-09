@@ -14,20 +14,63 @@ sudo su - postgres
 # Созданные кластеры
 pg_lsclusters
 
+psql
+
 # Создадим БД
+create database test;
+
+# Перейдём в БД
+\c test
 
 # Создадим таблицу
 
+create table test as 
+select generate_series as id
+	, generate_series::text || (random() * 10)::text as col2 
+  , (array['Yes', 'No', 'Maybe'])[floor(random() * 3 + 1)] as is_okay
+from generate_series(1, 50000);
+
+# Сделаем тестовую выборку
+select * from test limit 10;
+
+# Посмотрим структуру таблицы
+\d test
+
 ```
+
+![image](https://github.com/user-attachments/assets/b0d9a0b3-9cff-4ea9-a09e-9fcf0ee4154e)
+
 
 3. Создан индекс к этой таблице
 ```
-# Создадим индекс
+# Просмотрим план запроса (до создания индекса)
+explain 
+select id from test where id = 1;
 
+# Просмотрим план запроса со скоростью выполнения (до создания индекса)
+explain 
+explain analyze
+select id from test where id = 1;
+
+# Создадим индекс
+create index idx_test_id on test(id);
+
+# Просмотрим план запроса (после создания индекса)
+explain 
+explain 
+select id from test where id = 1;
+
+# Просмотрим план запроса со скоростью выполнения (после создания индекса)
+explain analyze
+select id from test where id = 1;
 
 ```
 
-4. Результат команды explain
+4. Результат команды explain. Видим, что запрос содержащий ограничение по полю, находящемуся в индексе, значительно ускорился. План запроса демонстрирует, что используется индекс.
+
+![image](https://github.com/user-attachments/assets/dad669d3-21ed-4a69-8fce-5e166914ebbd)
+
+
 
 #### Часть 2. Индекс для полнотекстового поиска
 1. Создан индекс к таблице
