@@ -97,24 +97,47 @@ set col2_lexeme = to_tsvector(col2);
 
 ```
 
-2. Создан индекс к таблице
+![image](https://github.com/user-attachments/assets/fd55a098-c32f-4d2f-a921-f7ee7bc08453)
+
+
+2. Создан индекс типа GIN (Generalized Inverted Index) к таблице
 ```
 # Просмотрим план запроса со скоростью выполнения (до создания индекса) 
 explain analyze
-select * from test where col2_lexeme @@ to_tsquery('4955') limit 10;
+select * from test where col2_lexeme @@ to_tsquery('4955');
 
 # Создадим индекс
 CREATE INDEX search_index_col2 ON test USING GIN (col2_lexeme);
 
 # Просмотрим план запроса со скоростью выполнения (после создания индекса) 
 explain analyze
-select * from test where col2_lexeme @@ to_tsquery('4955') limit 10;
+select * from test where col2_lexeme @@ to_tsquery('4955');
 ```
 
-3. Результат команды explain
+3. Результат команды explain. Видим, что запрос содержащий поиск текста в поле типа tsvector, находящемгося в индексе, значительно ускорился. План запроса демонстрирует, что используется созданный индекс.
 ```
-...
+ Seq Scan on test  (cost=0.00..14119.00 rows=250 width=66) (actual time=277.666..277.666 rows=0 loops=1)
+   Filter: (col2_lexeme @@ to_tsquery('4955'::text))
+   Rows Removed by Filter: 50000
+ Planning Time: 0.127 ms
+ Execution Time: 277.686 ms
+
 ```
+
+```
+ Bitmap Heap Scan on test  (cost=18.19..658.94 rows=250 width=66) (actual time=0.022..0.023 rows=0 loops=1)
+   Recheck Cond: (col2_lexeme @@ to_tsquery('4955'::text))
+   ->  Bitmap Index Scan on search_index_col2  (cost=0.00..18.12 rows=250 width=0) (actual time=0.020..0.021 rows=0 loops=1)
+         Index Cond: (col2_lexeme @@ to_tsquery('4955'::text))
+ Planning Time: 0.147 ms
+ Execution Time: 0.048 ms
+
+```
+
+![image](https://github.com/user-attachments/assets/ac2ffdce-e3b5-4f95-829f-7bb084074565)
+![image](https://github.com/user-attachments/assets/bc3eaf97-23cb-49be-9a5d-a5b166f951f3)
+
+
 
 
 #### Часть 3. Индекс на часть таблицы или индекс на поле с функцией
