@@ -121,7 +121,6 @@ select * from test where col2_lexeme @@ to_tsquery('4955');
    Rows Removed by Filter: 50000
  Planning Time: 0.127 ms
  Execution Time: 277.686 ms
-
 ```
 
 ```
@@ -131,7 +130,6 @@ select * from test where col2_lexeme @@ to_tsquery('4955');
          Index Cond: (col2_lexeme @@ to_tsquery('4955'::text))
  Planning Time: 0.147 ms
  Execution Time: 0.048 ms
-
 ```
 
 ![image](https://github.com/user-attachments/assets/ac2ffdce-e3b5-4f95-829f-7bb084074565)
@@ -156,7 +154,6 @@ select * from test where id between 30000 and 40000;
 
 drop index idx_test_id_25000;
 drop index idx_test_id;
-
 ```
 2. Результат команды explain. Видим, что по сравнению с обычным индексом выигрыша во времени не получилось. Значит и обычный индекс на таком объёме строк работает хорошо. По сравнению с запросом к таблице без этих индексов результат естественно значительно лучше. Частичный индекс даст эффект, если он будет содержать меньше половины от всего объёма данных. После сужения данных для индекса (20% от общего объёма), получили выигрыш в два раза по сравнению с обычным индексом.
 
@@ -165,7 +162,6 @@ drop index idx_test_id;
    Index Cond: ((id >= 30000) AND (id <= 40000))
  Planning Time: 0.164 ms
  Execution Time: 8.307 ms
-
 ```
 
 ```
@@ -209,7 +205,6 @@ select * from test where id = 48000;
    Index Cond: (id = 48000)
  Planning Time: 0.156 ms
  Execution Time: 0.045 ms
-
 ```
 ![image](https://github.com/user-attachments/assets/ca07baf3-b142-4061-a04f-ba177513749e)
 
@@ -218,13 +213,36 @@ select * from test where id = 48000;
 
 
 #### Часть 4. Индекс на несколько полей
-1. Создан индекс к таблице
+1. Создан составной индекс к таблице
 ```
+# Просмотрим план запроса со скоростью выполнения (до создания индекса) 
+explain analyze
+select * from test where is_okay = 'Yes' and id = 100;
+
 # Создадим индекс
+create index idx_test_id_is_okay on test(id, is_okay);
+
+# Просмотрим план запроса со скоростью выполнения (после создания индекса) 
+explain analyze
+select * from test where is_okay = 'Yes' and id = 100;
+```
+2. Результат команды explain. Видим, что использование индекса позволило сократить время выполнения запроса. Так как индекс содержит оба поля, участвующих в ограничении в запросе.
+```
+ Index Scan using idx_test_id on test  (cost=0.29..8.31 rows=1 width=66) (actual time=0.152..0.152 rows=0 loops=1)
+   Index Cond: (id = 100)
+   Filter: (is_okay = 'Yes'::text)
+   Rows Removed by Filter: 1
+ Planning Time: 0.129 ms
+ Execution Time: 0.175 ms
+```
 
 ```
-2. Результат команды explain
+ Index Scan using idx_test_id_is_okay on test  (cost=0.29..8.31 rows=1 width=66) (actual time=0.022..0.022 rows=0 loops=1)
+   Index Cond: ((id = 100) AND (is_okay = 'Yes'::text))
+ Planning Time: 0.329 ms
+ Execution Time: 0.041 ms
+```
 
-
+![image](https://github.com/user-attachments/assets/20299132-39b6-4e61-930d-af4cb8ae0e43)
 
 
