@@ -141,12 +141,81 @@ select * from test where col2_lexeme @@ to_tsquery('4955');
 
 
 #### Часть 3. Индекс на часть таблицы или индекс на поле с функцией
-1. Создан индекс к таблице
+1. Создан индекс к части таблице, в которой значение поля id больше 25000 (половина записей).
 ```
+# Просмотрим план запроса со скоростью выполнения (до создания индекса) 
+explain analyze
+select * from test where id between 30000 and 40000;
+
 # Создадим индекс
+create index idx_test_id_25000 on test(id) where id > 25000;
+
+# Просмотрим план запроса со скоростью выполнения (после создания индекса) 
+explain analyze
+select * from test where id between 30000 and 40000;
+
+drop index idx_test_id_25000;
+drop index idx_test_id;
 
 ```
-2. Результат команды explain
+2. Результат команды explain. Видим, что по сравнению с обычным индексом выигрыша во времени не получилось. Значит и обычный индекс на таком объёме строк работает хорошо. По сравнению с запросом к таблице без этих индексов результат естественно значительно лучше. Частичный индекс даст эффект, если он будет содержать меньше половины от всего объёма данных. После сужения данных для индекса (20% от общего объёма), получили выигрыш в два раза по сравнению с обычным индексом.
+
+```
+ Index Scan using idx_test_id on test  (cost=0.29..619.79 rows=9925 width=66) (actual time=0.013..7.017 rows=10001 loops=1)
+   Index Cond: ((id >= 30000) AND (id <= 40000))
+ Planning Time: 0.164 ms
+ Execution Time: 8.307 ms
+
+```
+
+```
+ Index Scan using idx_test_id_25000 on test  (cost=0.29..515.79 rows=9925 width=66) (actual time=0.073..8.148 rows=10001 loops=1)
+   Index Cond: ((id >= 30000) AND (id <= 40000))
+ Planning Time: 0.621 ms
+ Execution Time: 9.501 ms
+```
+
+```
+ Seq Scan on test  (cost=0.00..1744.00 rows=9925 width=66) (actual time=11.413..20.225 rows=10001 loops=1)
+   Filter: ((id >= 30000) AND (id <= 40000))
+   Rows Removed by Filter: 39999
+ Planning Time: 0.331 ms
+ Execution Time: 21.477 ms
+```
+
+![image](https://github.com/user-attachments/assets/fcfc2532-6fd1-4fc9-91e3-e03d2fa1a924)
+
+
+![image](https://github.com/user-attachments/assets/b33b2250-9e92-4f4a-bafb-ba6e0e8cf0ee)
+
+![image](https://github.com/user-attachments/assets/195851a9-e1a9-492a-8064-7e1d53bc4678)
+
+```
+# Просмотрим план запроса со скоростью выполнения (до создания индекса) 
+explain analyze
+select * from test where id = 48000;
+
+# Создадим индекс
+create index idx_test_id_25000 on test(id) where id > 40000;
+
+# Просмотрим план запроса со скоростью выполнения (после создания индекса) 
+explain analyze
+select * from test where id = 48000;
+
+```
+
+```
+ Index Scan using idx_test_id_25000 on test  (cost=0.29..8.30 rows=1 width=66) (actual time=0.028..0.030 rows=1 loops=1)
+   Index Cond: (id = 48000)
+ Planning Time: 0.156 ms
+ Execution Time: 0.045 ms
+
+```
+![image](https://github.com/user-attachments/assets/ca07baf3-b142-4061-a04f-ba177513749e)
+
+![image](https://github.com/user-attachments/assets/d8b47863-345a-43e7-8f41-199a86cfe3ea)
+
+
 
 #### Часть 4. Индекс на несколько полей
 1. Создан индекс к таблице
