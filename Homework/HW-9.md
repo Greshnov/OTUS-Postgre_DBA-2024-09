@@ -67,19 +67,51 @@ select id from test where id = 1;
 ```
 
 4. Результат команды explain. Видим, что запрос содержащий ограничение по полю, находящемуся в индексе, значительно ускорился. План запроса демонстрирует, что используется индекс.
-
+```
+ Seq Scan on test  (cost=0.00..1007.00 rows=1 width=4) (actual time=0.026..24.476 rows=1 loops=1)
+   Filter: (id = 1)
+   Rows Removed by Filter: 49999
+ Planning Time: 0.151 ms
+ Execution Time: 24.505 ms
+```
+```
+ Index Only Scan using idx_test_id on test  (cost=0.29..8.31 rows=1 width=4) (actual time=0.142..0.144 rows=1 loops=1)
+   Index Cond: (id = 1)
+   Heap Fetches: 1
+ Planning Time: 0.191 ms
+ Execution Time: 0.167 ms
+```
 ![image](https://github.com/user-attachments/assets/dad669d3-21ed-4a69-8fce-5e166914ebbd)
 
 
 
 #### Часть 2. Индекс для полнотекстового поиска
-1. Создан индекс к таблице
+1. Добавим поле типа tsvector к таблице для использования в полнотекстовом поиске. Перенесем туда значение колонки col2.
 ```
+# Добавим столбец
+alter table test add column col2_lexeme tsvector;
+
+# Заполним данными
+update test
+set col2_lexeme = to_tsvector(col2);
+
+```
+
+2. Создан индекс к таблице
+```
+# Просмотрим план запроса со скоростью выполнения (до создания индекса) 
+explain analyze
+select * from test where col2_lexeme @@ to_tsquery('4955') limit 10;
+
 # Создадим индекс
+CREATE INDEX search_index_col2 ON test USING GIN (col2_lexeme);
 
+# Просмотрим план запроса со скоростью выполнения (после создания индекса) 
+explain analyze
+select * from test where col2_lexeme @@ to_tsquery('4955') limit 10;
 ```
 
-2. Результат команды explain
+3. Результат команды explain
 ```
 ...
 ```
