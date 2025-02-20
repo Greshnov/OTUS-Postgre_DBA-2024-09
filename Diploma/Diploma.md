@@ -3,6 +3,20 @@
 
 ### Diploma. Автоматизация ETL-процессов в PostgreSQL
 
+#### Общая схема
+
+![image](https://github.com/user-attachments/assets/065c6c2a-3374-4201-bf47-b2d5ca199495)
+
+
+**1-2)** watch_csv_folder.py отслеживает папку → добавляет файлы в csv_queue.\
+**3)** PostgreSQL триггер вызывает функцию notify_csv(), которая уведомляет о новых файлах.\
+**4-5)** listen_notify_csv.py ловит уведомление и вызывает load_csv_script.py.\
+**6)** load_csv_script.py загружает данные в таблицу sales.
+
+[Пример исходных данных](/Diploma/ext_data)\
+[Python-скрипты](/Diploma/scripts)
+
+#### Шаги реализации
 
 1. Монтируем сетевой диск
 ```sh
