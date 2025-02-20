@@ -21,4 +21,4 @@
  
 
 ### Diploma
-- [Project]() 
+- [Project](/Dimploma/Diploma.md) 
