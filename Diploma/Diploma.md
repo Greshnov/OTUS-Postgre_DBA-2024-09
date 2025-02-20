@@ -1,236 +1,235 @@
 # OTUS-Postgre_DBA-2024-09
 ## Александр Грешнов
 
-### Diploma
+### Diploma. Автоматизация ETL-процессов в PostgreSQL
 
-...
-...
+
 1. Монтируем сетевой диск
-```
+```sh
 # вспомогательные средства монтирования Windows каталогов
 sudo apt install cifs-utils
 
 mkdir /mnt/shared_external_data
 
-mount -t cifs //192.168.0.13/shared shared_external_data
-
-//192.168.0.13/shared
-
-sudo umount /var/lib/postgresql/shared_external_data
 sudo mount -t cifs //192.168.0.13/shared /mnt/shared_external_data -o username=postgres,password=777,uid=postgres,gid=postgres,file_mode=0777,dir_mode=0777
 
 ```
 
-![image](https://github.com/user-attachments/assets/eb3d9598-2dc3-493d-95ff-988d8839c22a)
-
 2. Создаём БД, схему и таблицу
-```
+```sql
 create database etl;
 
 create schema src;
 
-CREATE TABLE src.sales (
-    date DATE NULL,
-    shop_id INTEGER NULL,
-    shop_address TEXT NULL,
-    barcode BIGINT NULL,
-    product_name TEXT NULL,
-    qty INTEGER NULL,
-    price NUMERIC(10,2) NULL
+CREATE TABLE src.csv_queue (
+    id SERIAL PRIMARY KEY,
+    file_path TEXT NOT NULL,
+    processed BOOLEAN DEFAULT FALSE
 );
 
-
--- Функция для загрузки данных из CSV
-CREATE OR REPLACE FUNCTION src.load_csv_data_to_sales(file_path TEXT) RETURNS VOID AS $$
+CREATE OR REPLACE FUNCTION src.notify_csv() RETURNS TRIGGER AS $$
 BEGIN
-    EXECUTE format(
-        'COPY src.sales (date, shop_id, shop_address, barcode, product_name, qty, price) FROM %L DELIMITER '','' CSV HEADER;', 
-        file_path
-    );
+    PERFORM pg_notify('load_csv', '/mnt/shared_external_data/scripts/load_csv_script.py ' || NEW.file_path);
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-sudo apt update
-sudo apt install postgresql-plpython3
+CREATE TRIGGER src.trigger_csv_insert
+AFTER INSERT ON csv_queue
+FOR EACH ROW
+EXECUTE FUNCTION notify_csv();
 
-CREATE EXTENSION IF NOT EXISTS plpython3u;
-
-CREATE OR REPLACE FUNCTION run_python_script(file_path TEXT) RETURNS VOID AS $$
-    import subprocess
-    subprocess.run(["python3", "/path/to/load_csv_to_postgres.py", file_path], check=True)
-$$ LANGUAGE plpython3u;
-
-
-
-CREATE OR REPLACE FUNCTION load_csv_to_sales(file_path TEXT) RETURNS VOID AS $$
-    import csv
-    import psycopg2
-    
-    conn = psycopg2.connect("dbname=your_db user=your_user password=your_password host=your_host")
-    cursor = conn.cursor()
-    
-    with open(file_path, "r", encoding="utf-8") as f:
-        reader = csv.reader(f, delimiter=",")
-        next(reader)  # Пропускаем заголовок
-        
-        for row in reader:
-            cursor.execute(
-                "INSERT INTO sales (date, shop_id, shop_address, barcode, product_name, qty, price) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s)", row
-            )
-    
-    conn.commit()
-    cursor.close()
-    conn.close()
-$$ LANGUAGE plpython3u;
+CREATE TABLE sales (
+    date DATE NOT NULL,
+    shop_id INTEGER NOT NULL,
+    shop_address TEXT,
+    barcode VARCHAR(50) NOT NULL,
+    product_name TEXT,
+    qty INTEGER NOT NULL,
+    price NUMERIC(10,2) NOT NULL
+);
 
 ```
 
 
-1. Подготовка среды
-Перед тем как начать работу, важно убедиться, что все компоненты настроены правильно:
+3. Создаём Python скрипт мониторинга новых файлов (watch_csv_folder.py)
+```python
+import psycopg2
+import time
+from watchdog.observers.polling import PollingObserver
+from watchdog.events import FileSystemEventHandler
 
-Монтирование сетевого диска на сервере PostgreSQL.
-Настройка прав доступа: Убедись, что у PostgreSQL есть доступ к папке с CSV файлами, а также права на чтение/запись в эту папку.
-В случае, если сервер работает на Linux и требуется подключение к SMB или NFS:
+WATCH_FOLDER = "/mnt/shared_external_data/ext_data/"
 
-Для NFS — нужно убедиться, что путь к файлам правильно смонтирован в систему.
-Для SMB (Windows-сетевой доступ) можно использовать cifs-utils для монтирования сетевого диска:
-bash
-Копировать
-Редактировать
-sudo mount -t cifs //server/shared /mnt/smb -o user=your_user,password=your_password
-Пример пути после монтирования будет: /mnt/smb/csv_files/.
+# Явно задаем параметры подключения к БД
+DB_PARAMS = {
+    "dbname": "etl",
+    "user": "postgres",
+    "password": "postgres",
+    "host": "localhost",
+    "port": "5432"
+}
 
-2. Структура таблицы в PostgreSQL
-Необходимо заранее продумать структуру таблиц в PostgreSQL, в которые будут загружаться данные из CSV. Допустим, у нас есть таблица target_table, которая будет хранить данные.
+def get_db_connection():
+    """Получаем подключение к БД с явными параметрами"""
+    return psycopg2.connect(**DB_PARAMS)
 
-Пример структуры:
+def add_file_to_queue(file_path):
+    """Добавляем новый файл в csv_queue"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO src.csv_queue (file_path) VALUES (%s)", (file_path,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    print(f"Файл {file_path} добавлен в csv_queue.")
 
-sql
-Копировать
-Редактировать
-CREATE TABLE target_table (
-    id SERIAL PRIMARY KEY,
-    column1 TEXT,
-    column2 INTEGER,
-    column3 DATE,
-    column4 NUMERIC
-);
-Важно, чтобы структура таблицы соответствовала структуре CSV-файлов. Если структура данных изменяется, нужно предусмотреть логику для обработки новых столбцов или пропусков.
+class CSVFileHandler(FileSystemEventHandler):
+    """Отслеживает появление новых файлов"""
+    def on_created(self, event):
+        if event.is_directory:
+            return
+        if event.src_path.endswith(".csv"):
+            time.sleep(1)  # Ожидание полной записи файла
+            print(f"Файл создан: {event.src_path}")
+            add_file_to_queue(event.src_path)
 
-3. Обработка ошибок при загрузке данных
-Когда файлы загружаются, могут возникать ошибки, например:
+observer = PollingObserver()
+observer.schedule(CSVFileHandler(), path=WATCH_FOLDER, recursive=False)
+observer.start()
 
-Проблемы с форматом данных (например, текст вместо числа).
-Пропущенные или пустые значения в обязательных столбцах.
-Важно настроить обработку ошибок:
+print(f"Наблюдение за папкой {WATCH_FOLDER} запущено...")
 
-Таблица для ошибок: Создать отдельную таблицу для хранения записей, которые не удалось загрузить, чтобы их можно было обработать позже.
-
-Пример:
-
-sql
-Копировать
-Редактировать
-CREATE TABLE load_errors (
-    id SERIAL PRIMARY KEY,
-    file_name TEXT,
-    error_message TEXT,
-    row_data TEXT
-);
-В Python-скрипте можно ловить исключения и записывать ошибочные строки в таблицу load_errors.
-
-Пример обработки ошибок в Python:
-
-python
-Копировать
-Редактировать
 try:
-    cursor.execute(copy_query)
+    while True:
+        time.sleep(1)
+except KeyboardInterrupt:
+    observer.stop()
+observer.join()
+
+```
+
+4. Создаём Python скрипт мониторинга прослушивания событий (listen_notify_csv.py)
+```python
+import psycopg2
+import select
+import subprocess
+
+# Явно задаем параметры подключения к БД
+DB_PARAMS = {
+    "dbname": "etl",
+    "user": "postgres",
+    "password": "postgres",
+    "host": "localhost",
+    "port": "5432"
+}
+
+def get_db_connection():
+    """Получаем подключение к БД с явными параметрами"""
+    return psycopg2.connect(**DB_PARAMS)
+
+def load_csv_to_postgres(script_path, file_path):
+    """Запускаем внешний Python-скрипт для загрузки CSV"""
+    print(f"Запущен скрипт {script_path} для обработки файла {file_path}")
+    subprocess.run(["python3", script_path, file_path], check=True)
+    print(f"Выполнен скрипт {script_path} для обработки файла {file_path}")
+
+# Подключаемся к БД и слушаем события
+conn = get_db_connection()
+conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+cursor = conn.cursor()
+cursor.execute("LISTEN load_csv;")
+
+print("Ожидание новых файлов...")
+while True:
+    select.select([conn], [], [], None)
+    conn.poll()
+    while conn.notifies:
+        notify = conn.notifies.pop(0)
+        message = notify.payload.split(" ")  # Разделяем путь к скрипту и путь к файлу
+        script_path = message[0]
+        file_path = message[1]
+        print(f"Получено уведомление о файле: {file_path}, запуск скрипта: {script_path}")
+        load_csv_to_postgres(script_path, file_path)
+
+```
+
+
+4. Создаём Python скрипт загрузки данныхbp csv-файла (load_csv_script.py)
+```python
+import psycopg2
+import csv
+import sys
+from datetime import datetime  # ← Импортируем datetime
+
+# Явно задаем параметры подключения к БД
+DB_PARAMS = {
+    "dbname": "etl",
+    "user": "postgres",
+    "password": "postgres",
+    "host": "localhost",
+    "port": "5432"
+}
+def get_db_connection():
+    """Получаем подключение к БД с явными параметрами"""
+    return psycopg2.connect(**DB_PARAMS)
+
+def convert_date(date_str):
+    """Преобразует дату из формата DD.MM.YYYY в формат YYYY-MM-DD"""
+    return datetime.strptime(date_str, "%d.%m.%Y").strftime("%Y-%m-%d")
+
+def load_csv(file_path):
+    """Загружает CSV-файл в PostgreSQL"""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    with open(file_path, "r", encoding="utf-8") as f:
+        reader = csv.reader(f, delimiter=";")
+        next(reader)  # Пропускаем заголовок
+
+        for row in reader:
+            row[0] = convert_date(row[0])  # Преобразуем дату в ISO-формат
+
+            cursor.execute(
+                "INSERT INTO src.sales (date, shop_id, shop_address, barcode, product_name, qty, price) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s)", row
+            )
+
     conn.commit()
-except Exception as e:
-    error_message = str(e)
-    with open(csv_file, 'r') as f:
-        row_data = f.readlines()
-    cursor.execute("INSERT INTO load_errors (file_name, error_message, row_data) VALUES (%s, %s, %s)",
-                   (csv_file, error_message, row_data))
-    conn.commit()
-4. Трансформация данных перед загрузкой
-В процессе загрузки можно выполнять предварительную очистку и трансформацию данных. Это можно делать на уровне SQL или с помощью Python.
+    cursor.close()
+    conn.close()
+    print(f"Файл {file_path} успешно загружен в БД.")
 
-Пример трансформации данных на уровне SQL:
+if __name__ == "__main__":
+    file_path = sys.argv[1]  # Получаем путь к файлу из аргументов командной строки
+    load_csv(file_path)
+```
+5. Устанавливаем необходимые компоненты
+```
+sudo apt update
 
-sql
-Копировать
-Редактировать
-CREATE OR REPLACE FUNCTION clean_data()
-RETURNS void AS
-$$
-BEGIN
-    -- Пример очистки данных: замена пустых строк на NULL
-    UPDATE target_table
-    SET column1 = NULL WHERE column1 = '';
-    -- Можно добавить более сложные трансформации
-END;
-$$ LANGUAGE plpgsql;
-Пример вызова этой функции после загрузки:
+# Службы мониторинга файловой системы
+sudo apt install inotify-tools
 
-python
-Копировать
-Редактировать
-cursor.execute("SELECT clean_data();")
-conn.commit()
-5. Автоматизация процесса
-Теперь, чтобы запустить процесс на регулярной основе, настроим его через cron или pgAgent (если ты используешь PostgreSQL в Linux или Unix-среде).
+# Питон
+sudo apt install python
 
-Использование cron: Для регулярного запуска Python-скрипта (каждый час, к примеру):
+# Установщик расширений Питона
+sudo apt install python3 python3-pip
 
-bash
-Копировать
-Редактировать
-0 * * * * /usr/bin/python3 /path/to/your/script.py
-Это cron-задание будет запускать скрипт каждый час. Если тебе нужно настроить более точные интервалы, можно отрегулировать время запуска.
+# Расширение Питона для реализации мониторинга
+pip3 install --break-system-packages  watchdog
 
-Использование pgAgent: Если ты хочешь интегрировать выполнение задач непосредственно с PostgreSQL, можно использовать pgAgent — расширение для PostgreSQL, которое позволяет планировать и управлять заданиями.
+# Расширение Питона для реализации доступа к СУБД PostgreSQL
+pip3 install --break-system-packages  psycopg2-binary
 
-Пример создания задания в pgAgent для запуска Python-скрипта:
+```
 
-sql
-Копировать
-Редактировать
-INSERT INTO pgagent.pga_job (jobid, jobname, jobdesc, jobenabled)
-VALUES (1, 'ETL Job', 'Регулярная загрузка CSV данных', TRUE);
+6. Добавляем автозапуск скриптов listen_notify_csv.py и load_csv_script.py в автозагрузку пользователя postgres
+```
+crontab -e
 
-INSERT INTO pgagent.pga_jobstep (jstid, jobid, jstname, jstcode, jstenabled)
-VALUES (1, 1, 'Run Python ETL Script', 'python3 /path/to/your/script.py', TRUE);
-6. Мониторинг и отчетность
-Для мониторинга процесса можно:
+@reboot python3 /mnt/shared_external_data/scripts/watch_csv_folder.py >> /var/log/watch_csv.log 2>&1 &
+@reboot python3 /mnt/shared_external_data/scripts/listen_notify_csv.py >> /var/log/listen_notify.log 2>&1 &
 
-Логировать успешные и неудачные попытки загрузки.
-Отправлять отчеты на email после выполнения задания. Это можно реализовать через Python (с использованием библиотеки smtplib) или через механизмы PostgreSQL.
-Пример Python-скрипта для отправки отчета:
-
-python
-Копировать
-Редактировать
-import smtplib
-from email.mime.text import MIMEText
-
-def send_email(subject, body):
-    msg = MIMEText(body)
-    msg['Subject'] = subject
-    msg['From'] = 'your_email@example.com'
-    msg['To'] = 'recipient@example.com'
-
-    with smtplib.SMTP('smtp.example.com') as server:
-        server.login('your_email@example.com', 'your_password')
-        server.sendmail('your_email@example.com', 'recipient@example.com', msg.as_string())
-
-# После выполнения ETL-скрипта:
-send_email("ETL Process Complete", "The ETL process has finished successfully.")
-7. Оптимизация и масштабируемость
-Индексация: Если таблицы с данными станут большими, важно добавить индексы на те столбцы, которые часто используются для поиска или фильтрации данных.
-Пакетная загрузка: Для улучшения производительности можно загружать данные пакетами, используя временные таблицы, а затем копировать данные в основную таблицу с меньшими блокировками.
-Заключение:
-Процесс ETL с использованием CSV-файлов на сетевом диске — это мощный инструмент для интеграции данных в PostgreSQL. С помощью регулярных загрузок, очистки и трансформации данных ты можешь автоматизировать работу с большими объемами данных и минимизировать ошибки.
+```
