@@ -10,9 +10,15 @@
 # вспомогательные средства монтирования Windows каталогов
 sudo apt install cifs-utils
 
-mkdir shared_external_data
+mkdir /mnt/shared_external_data
 
 mount -t cifs //192.168.0.13/shared shared_external_data
+
+//192.168.0.13/shared
+
+sudo umount /var/lib/postgresql/shared_external_data
+sudo mount -t cifs //192.168.0.13/shared /mnt/shared_external_data -o username=postgres,password=777,uid=postgres,gid=postgres,file_mode=0777,dir_mode=0777
+
 ```
 
 ![image](https://github.com/user-attachments/assets/eb3d9598-2dc3-493d-95ff-988d8839c22a)
@@ -23,8 +29,8 @@ create database etl;
 
 create schema src;
 
-CREATE TABLE shop_sales (
-    sale_date DATE NULL,
+CREATE TABLE src.sales (
+    date DATE NULL,
     shop_id INTEGER NULL,
     shop_address TEXT NULL,
     barcode BIGINT NULL,
@@ -32,6 +38,52 @@ CREATE TABLE shop_sales (
     qty INTEGER NULL,
     price NUMERIC(10,2) NULL
 );
+
+
+-- Функция для загрузки данных из CSV
+CREATE OR REPLACE FUNCTION src.load_csv_data_to_sales(file_path TEXT) RETURNS VOID AS $$
+BEGIN
+    EXECUTE format(
+        'COPY src.sales (date, shop_id, shop_address, barcode, product_name, qty, price) FROM %L DELIMITER '','' CSV HEADER;', 
+        file_path
+    );
+END;
+$$ LANGUAGE plpgsql;
+
+sudo apt update
+sudo apt install postgresql-plpython3
+
+CREATE EXTENSION IF NOT EXISTS plpython3u;
+
+CREATE OR REPLACE FUNCTION run_python_script(file_path TEXT) RETURNS VOID AS $$
+    import subprocess
+    subprocess.run(["python3", "/path/to/load_csv_to_postgres.py", file_path], check=True)
+$$ LANGUAGE plpython3u;
+
+
+
+CREATE OR REPLACE FUNCTION load_csv_to_sales(file_path TEXT) RETURNS VOID AS $$
+    import csv
+    import psycopg2
+    
+    conn = psycopg2.connect("dbname=your_db user=your_user password=your_password host=your_host")
+    cursor = conn.cursor()
+    
+    with open(file_path, "r", encoding="utf-8") as f:
+        reader = csv.reader(f, delimiter=",")
+        next(reader)  # Пропускаем заголовок
+        
+        for row in reader:
+            cursor.execute(
+                "INSERT INTO sales (date, shop_id, shop_address, barcode, product_name, qty, price) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s)", row
+            )
+    
+    conn.commit()
+    cursor.close()
+    conn.close()
+$$ LANGUAGE plpython3u;
+
 ```
 
 
